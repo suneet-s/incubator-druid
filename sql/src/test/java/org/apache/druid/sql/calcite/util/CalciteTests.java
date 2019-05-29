@@ -509,8 +509,7 @@ public class CalciteTests
                 new SelectQueryRunnerFactory(
                     new SelectQueryQueryToolChest(
                         TestHelper.makeJsonMapper(),
-                        QueryRunnerTestHelper.noopIntervalChunkingQueryRunnerDecorator(),
-                        SELECT_CONFIG_SUPPLIER
+                        QueryRunnerTestHelper.noopIntervalChunkingQueryRunnerDecorator()
                     ),
                     new SelectQueryEngine(),
                     QueryRunnerTestHelper.NOOP_QUERYWATCHER
