@@ -5731,7 +5731,7 @@ public class CalciteQueryTest extends BaseCalciteQueryTest
         "lookyloo",
         false,
         null,
-        false,
+        null,
         true
     );
 
@@ -5784,7 +5784,7 @@ public class CalciteQueryTest extends BaseCalciteQueryTest
         "lookyloo",
         false,
         null,
-        false,
+        null,
         true
     );
 
