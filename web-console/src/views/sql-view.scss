@@ -34,15 +34,8 @@
     }
   }
 
-  .table-container {
+  .ReactTable {
     flex: 1;
-    position: relative;
-
-    .ReactTable {
-      position: absolute;
-      height: 100%;
-      width: 100%;
-    }
   }
 }
 
