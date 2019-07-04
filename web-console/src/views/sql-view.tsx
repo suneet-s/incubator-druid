@@ -114,7 +114,7 @@ export class SqlView extends React.Component<SqlViewProps, SqlViewState> {
             header: true
           };
 
-          if (bypassCache) {
+          if (wrapQuery) {
             queryPayload.context = {
               useCache: false,
               populateCache: false
