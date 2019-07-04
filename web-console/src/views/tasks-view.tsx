@@ -310,7 +310,7 @@ ORDER BY "rank" DESC, "created_time" DESC`);
     return <AsyncActionDialog
       action={
         resumeSupervisorId ? async () => {
-          const resp = await axios.post(`/druid/indexer/v1/supervisor/${resumeSupervisorId}/resume`, {});
+          const resp = await axios.post(`/druid/indexer/v1/supervisor/${resumeSupervisorId}/suspend`, {});
           return resp.data;
         } : null
       }
