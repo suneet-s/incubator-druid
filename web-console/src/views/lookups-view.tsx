@@ -38,8 +38,6 @@ import './lookups-view.scss';
 
 const tableColumns: string[] = ['Lookup name', 'Tier', 'Type', 'Version', 'Actions'];
 
-const DEFAULT_LOOKUP_TIER: string = '__default';
-
 export interface LookupsViewProps extends React.Props<any> {
 
 }
@@ -91,8 +89,8 @@ export class LookupsView extends React.Component<LookupsViewProps, LookupsViewSt
   componentDidMount(): void {
     this.lookupsGetQueryManager = new QueryManager({
       processQuery: async (query: string) => {
-        const tiersResp = await axios.get('/druid/coordinator/v1/lookups/config?discover=true');
-        const tiers = tiersResp.data && tiersResp.data.length > 0 ? tiersResp.data : [DEFAULT_LOOKUP_TIER];
+        const tiersResp = await axios.get('/druid/coordinator/v1/tiers');
+        const tiers = tiersResp.data;
 
         const lookupEntries: {}[] = [];
         const lookupResp = await axios.get('/druid/coordinator/v1/lookups/config/all');

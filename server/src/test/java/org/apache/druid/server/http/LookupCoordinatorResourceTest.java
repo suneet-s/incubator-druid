@@ -148,10 +148,9 @@ public class LookupCoordinatorResourceTest
   @Test
   public void testDiscoveryGet()
   {
-    final Set<String> tiers = ImmutableSet.of("discoveredLookupTier");
+    final Set<String> tiers = ImmutableSet.of();
     final LookupCoordinatorManager lookupCoordinatorManager = EasyMock.createStrictMock(
         LookupCoordinatorManager.class);
-    EasyMock.expect(lookupCoordinatorManager.getKnownLookups()).andReturn(SINGLE_TIER_MAP).once();
     EasyMock.expect(lookupCoordinatorManager.discoverTiers()).andReturn(tiers).once();
     EasyMock.replay(lookupCoordinatorManager);
     final LookupCoordinatorResource lookupCoordinatorResource = new LookupCoordinatorResource(
@@ -161,8 +160,7 @@ public class LookupCoordinatorResourceTest
     );
     final Response response = lookupCoordinatorResource.getTiers(true);
     Assert.assertEquals(200, response.getStatus());
-
-    Assert.assertEquals(ImmutableSet.of("lookupTier", "discoveredLookupTier"), response.getEntity());
+    Assert.assertEquals(tiers, response.getEntity());
     EasyMock.verify(lookupCoordinatorManager);
   }
 
@@ -173,7 +171,6 @@ public class LookupCoordinatorResourceTest
     final RuntimeException ex = new RuntimeException(errMsg);
     final LookupCoordinatorManager lookupCoordinatorManager = EasyMock.createStrictMock(
         LookupCoordinatorManager.class);
-    EasyMock.expect(lookupCoordinatorManager.getKnownLookups()).andReturn(SINGLE_TIER_MAP).once();
     EasyMock.expect(lookupCoordinatorManager.discoverTiers()).andThrow(ex).once();
     EasyMock.replay(lookupCoordinatorManager);
     final LookupCoordinatorResource lookupCoordinatorResource = new LookupCoordinatorResource(
@@ -192,7 +189,7 @@ public class LookupCoordinatorResourceTest
   {
     final LookupExtractorFactoryMapContainer container = new LookupExtractorFactoryMapContainer(
         "v0",
-        new HashMap<>()
+        new HashMap<String, Object>()
     );
     final LookupCoordinatorManager lookupCoordinatorManager = EasyMock.createStrictMock(
         LookupCoordinatorManager.class);
