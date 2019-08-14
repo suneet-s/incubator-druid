@@ -61,7 +61,7 @@ public class DeterminePartitionsJobTest
 
   @Parameterized.Parameters(name = "assumeGrouped={0}, "
                                    + "targetPartitionSize={1}, "
-                                   + "interval={2}"
+                                   + "interval={2}, "
                                    + "expectedNumOfSegments={3}, "
                                    + "expectedNumOfShardsForEachSegment={4}, "
                                    + "expectedStartEndForEachShard={5}, "
@@ -194,7 +194,7 @@ public class DeterminePartitionsJobTest
             },
             {
                 true,
-                1000,
+                1000L,
                 "2014-10-22T00:00:00Z/P1D",
                 1,
                 new int[]{1},
