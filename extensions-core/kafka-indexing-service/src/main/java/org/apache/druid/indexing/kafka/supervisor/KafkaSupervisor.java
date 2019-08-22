@@ -282,7 +282,7 @@ public class KafkaSupervisor extends SeekableStreamSupervisor<Integer, Long>
   @Override
   protected KafkaDataSourceMetadata createDataSourceMetaDataForReset(String topic, Map<Integer, Long> map)
   {
-    return new KafkaDataSourceMetadata(new SeekableStreamStartSequenceNumbers<>(topic, map, Collections.emptySet()));
+    return new KafkaDataSourceMetadata(new SeekableStreamEndSequenceNumbers<>(topic, map));
   }
 
   @Override
@@ -384,5 +384,11 @@ public class KafkaSupervisor extends SeekableStreamSupervisor<Integer, Long>
   public KafkaSupervisorIOConfig getIoConfig()
   {
     return spec.getIoConfig();
+  }
+
+  @VisibleForTesting
+  public KafkaSupervisorTuningConfig getTuningConfig()
+  {
+    return spec.getTuningConfig();
   }
 }

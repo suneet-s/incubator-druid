@@ -56,7 +56,6 @@ import org.apache.druid.java.util.common.StringUtils;
 import org.joda.time.DateTime;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -268,9 +267,7 @@ public class KinesisSupervisor extends SeekableStreamSupervisor<String, String>
       Map<String, String> map
   )
   {
-    return new KinesisDataSourceMetadata(
-        new SeekableStreamStartSequenceNumbers<>(stream, map, Collections.emptySet())
-    );
+    return new KinesisDataSourceMetadata(new SeekableStreamEndSequenceNumbers<>(stream, map));
   }
 
   @Override
