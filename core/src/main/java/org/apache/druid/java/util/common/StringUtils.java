@@ -411,7 +411,7 @@ public class StringUtils
     System.arraycopy(multiple, 0, multiple, copied, limit - copied);
     return new String(multiple, StandardCharsets.UTF_8);
   }
-   
+
   /**
    * Returns the string left-padded with the string pad to a length of len characters.
    * If str is longer than len, the return value is shortened to len characters.
@@ -453,7 +453,7 @@ public class StringUtils
 
   /**
    * Returns the string right-padded with the string pad to a length of len characters.
-   * If str is longer than len, the return value is shortened to len characters. 
+   * If str is longer than len, the return value is shortened to len characters.
    *
    * @param base The base string to be padded
    * @param len The length of padded string

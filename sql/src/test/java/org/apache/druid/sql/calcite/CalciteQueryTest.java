@@ -8409,7 +8409,7 @@ public class CalciteQueryTest extends BaseCalciteQueryTest
                 .build()
         ),
         ImmutableList.of(
-            new Object[]{"[\"1\",\"2\"]", ""}
+            new Object[]{"[1,2]", ""}
         )
     );
   }
