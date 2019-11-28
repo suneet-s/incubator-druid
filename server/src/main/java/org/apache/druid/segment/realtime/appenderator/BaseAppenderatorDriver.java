@@ -34,6 +34,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import org.apache.druid.data.input.Committer;
 import org.apache.druid.data.input.InputRow;
 import org.apache.druid.indexing.overlord.SegmentPublishResult;
@@ -544,6 +545,25 @@ public abstract class BaseAppenderatorDriver implements Closeable
       TransactionalSegmentPublisher publisher
   )
   {
+    if (segmentsAndMetadata.getSegments().isEmpty()) {
+      if (!publisher.supportsEmptyPublish()) {
+        log.info("Nothing to publish, skipping publish step.");
+        final SettableFuture<SegmentsAndMetadata> retVal = SettableFuture.create();
+        retVal.set(segmentsAndMetadata);
+        return retVal;
+      } else {
+        // Sanity check: if we have no segments to publish, but the appenderator did ingest > 0 valid rows,
+        // something is wrong. This check could be expanded to cover publishers that return false for
+        // supportsEmptyPublish, but is kept limited for now until further testing.
+        if (appenderator.getTotalRowCount() != 0) {
+          throw new ISE(
+              "Attempting to publish with empty segment set, but total row count was not 0: [%s].",
+              appenderator.getTotalRowCount()
+          );
+        }
+      }
+    }
+
     return executor.submit(
         () -> {
           if (segmentsAndMetadata.getSegments().isEmpty()) {

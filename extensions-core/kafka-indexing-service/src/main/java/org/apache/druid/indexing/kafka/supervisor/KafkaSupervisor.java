@@ -154,7 +154,6 @@ public class KafkaSupervisor extends SeekableStreamSupervisor<Integer, Long>
     );
   }
 
-
   @Override
   protected int getTaskGroupIdForPartition(Integer partition)
   {
