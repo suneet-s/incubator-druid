@@ -469,7 +469,11 @@ public abstract class BaseAppenderatorDriver implements Closeable
       final boolean useUniquePath
   )
   {
-    log.info("Pushing segments in background: [%s]", Joiner.on(", ").join(segmentIdentifiers));
+    log.info("Pushing [%s] segments in background", segmentIdentifiers.size());
+    log.infoSegmentIds(
+        segmentIdentifiers.stream().map(SegmentIdWithShardSpec::asSegmentId),
+        "Pushing segments"
+    );
 
     return Futures.transform(
         appenderator.push(segmentIdentifiers, wrappedCommitter, useUniquePath),
@@ -481,13 +485,18 @@ public abstract class BaseAppenderatorDriver implements Closeable
                                                                                 .collect(Collectors.toSet());
           if (!pushedSegments.equals(Sets.newHashSet(segmentIdentifiers))) {
             log.warn(
-                "Removing segments from deep storage because sanity check failed: %s", segmentsAndMetadata.getSegments()
+                "Removing [%s] segments from deep storage because sanity check failed",
+                segmentsAndMetadata.getSegments().size()
+            );
+            log.warnSegments(
+                segmentsAndMetadata.getSegments(),
+                "Removing segments due to failed sanity check"
             );
 
             segmentsAndMetadata.getSegments().forEach(dataSegmentKiller::killQuietly);
 
             throw new ISE(
-                "WTF?! Pushed different segments than requested. Pushed[%s], requested[%s].",
+                "Pushed different segments than requested. Pushed[%s], requested[%s].",
                 pushedSegments,
                 segmentIdentifiers
             );
@@ -509,7 +518,8 @@ public abstract class BaseAppenderatorDriver implements Closeable
    */
   ListenableFuture<SegmentsAndMetadata> dropInBackground(SegmentsAndMetadata segmentsAndMetadata)
   {
-    log.info("Dropping segments[%s]", segmentsAndMetadata.getSegments());
+    log.debugSegments(segmentsAndMetadata.getSegments(), "Dropping segments");
+
     final ListenableFuture<?> dropFuture = Futures.allAsList(
         segmentsAndMetadata
             .getSegments()
@@ -585,7 +595,12 @@ public abstract class BaseAppenderatorDriver implements Closeable
               );
 
               if (publishResult.isSuccess()) {
-                log.info("Published segments.");
+                log.info(
+                    "Published [%s] segments with commit metadata [%s]",
+                    segmentsAndMetadata.getSegments().size(),
+                    metadata
+                );
+                log.infoSegments(segmentsAndMetadata.getSegments(), "Published segments");
               } else {
                 // Publishing didn't affirmatively succeed. However, segments with our identifiers may still be active
                 // now after all, for two possible reasons:
@@ -605,7 +620,14 @@ public abstract class BaseAppenderatorDriver implements Closeable
                 final Set<DataSegment> activeSegments = usedSegmentChecker.findUsedSegments(segmentsIdentifiers);
 
                 if (activeSegments.equals(ourSegments)) {
-                  log.info("Could not publish segments, but checked and found them already published. Continuing.");
+                  log.info(
+                      "Could not publish [%s] segments, but checked and found them already published; continuing.",
+                      ourSegments.size()
+                  );
+                  log.infoSegments(
+                      segmentsAndMetadata.getSegments(),
+                      "Could not publish segments"
+                  );
 
                   // Clean up pushed segments if they are physically disjoint from the published ones (this means
                   // they were probably pushed by a replica, and with the unique paths option).
@@ -622,37 +644,35 @@ public abstract class BaseAppenderatorDriver implements Closeable
                   segmentsAndMetadata.getSegments().forEach(dataSegmentKiller::killQuietly);
 
                   if (publishResult.getErrorMsg() != null) {
-                    throw new ISE("Failed to publish segments because of [%s].", publishResult.getErrorMsg());
+                    log.errorSegments(ourSegments, "Failed to publish segments");
+                    throw new ISE(
+                        "Failed to publish segments because of [%s]",
+                        publishResult.getErrorMsg()
+                    );
                   } else {
-                    throw new ISE("Failed to publish segments.");
+                    log.errorSegments(ourSegments, "Failed to publish segments");
+                    throw new ISE("Failed to publish segments");
                   }
                 }
               }
             }
             catch (Exception e) {
               // Must not remove segments here, we aren't sure if our transaction succeeded or not.
-              log.warn(e, "Failed publish, not removing segments: %s", segmentsAndMetadata.getSegments());
+              log.warn(e, "Failed publish");
+              log.warnSegments(
+                  segmentsAndMetadata.getSegments(),
+                  "Failed publish, not removing segments"
+              );
               Throwables.propagateIfPossible(e);
               throw new RuntimeException(e);
             }
-          }
 
+          }
           return segmentsAndMetadata;
         }
     );
   }
 
-  /**
-   * Clears out all our state and also calls {@link Appenderator#clear()} on the underlying Appenderator.
-   */
-  @VisibleForTesting
-  public void clear() throws InterruptedException
-  {
-    synchronized (segments) {
-      segments.clear();
-    }
-    appenderator.clear();
-  }
 
   /**
    * Closes this driver. Does not close the underlying Appenderator; you should do that yourself.

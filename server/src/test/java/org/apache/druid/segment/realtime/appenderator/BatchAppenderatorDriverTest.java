@@ -96,7 +96,6 @@ public class BatchAppenderatorDriverTest extends EasyMockSupport
   {
     EasyMock.verify(dataSegmentKiller);
 
-    driver.clear();
     driver.close();
   }
 

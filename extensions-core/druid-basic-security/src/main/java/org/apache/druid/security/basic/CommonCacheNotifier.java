@@ -194,7 +194,8 @@ public class CommonCacheNotifier
       );
     }
     catch (MalformedURLException mue) {
-      LOG.error(callerName + ":WTF? Malformed url for DruidNode[%s] and itemName[%s]", druidNode, itemName);
+      LOG.error(callerName + ": Malformed url for DruidNode[%s] and baseUrl[%s]", druidNode, baseUrl);
+
       throw new RuntimeException(mue);
     }
   }

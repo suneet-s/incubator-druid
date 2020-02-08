@@ -93,7 +93,9 @@ public class DruidCoordinatorLogger implements DruidCoordinatorHelper
         (final String tier, final long count) -> {
           log.info(
               "[%s] : Assigned %s segments among %,d servers",
-              tier, count, cluster.getHistoricalsByTier(tier).size()
+              tier,
+              count,
+              cluster.getHistoricalsByTier(tier).size()
           );
 
           emitTieredStat(emitter, "segment/assigned/count", tier, count);
@@ -105,7 +107,9 @@ public class DruidCoordinatorLogger implements DruidCoordinatorHelper
         (final String tier, final long count) -> {
           log.info(
               "[%s] : Dropped %s segments among %,d servers",
-              tier, count, cluster.getHistoricalsByTier(tier).size()
+              tier,
+              count,
+              cluster.getHistoricalsByTier(tier).size()
           );
 
           emitTieredStat(emitter, "segment/dropped/count", tier, count);
@@ -132,7 +136,9 @@ public class DruidCoordinatorLogger implements DruidCoordinatorHelper
         (final String tier, final long count) -> {
           log.info(
               "[%s] : Removed %s unneeded segments among %,d servers",
-              tier, count, cluster.getHistoricalsByTier(tier).size()
+              tier,
+              count,
+              cluster.getHistoricalsByTier(tier).size()
           );
           emitTieredStat(emitter, "segment/unneeded/count", tier, count);
         }

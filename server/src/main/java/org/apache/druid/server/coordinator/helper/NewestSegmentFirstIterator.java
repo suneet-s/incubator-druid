@@ -27,6 +27,7 @@ import org.apache.druid.java.util.common.ISE;
 import org.apache.druid.java.util.common.JodaUtils;
 import org.apache.druid.java.util.common.guava.Comparators;
 import org.apache.druid.java.util.common.logger.Logger;
+import org.apache.druid.segment.SegmentUtils;
 import org.apache.druid.server.coordinator.DataSourceCompactionConfig;
 import org.apache.druid.timeline.DataSegment;
 import org.apache.druid.timeline.TimelineObjectHolder;
@@ -486,7 +487,7 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
     public String toString()
     {
       return "SegmentsToCompact{" +
-             "segments=" + segments +
+             "segments=" + SegmentUtils.commaSeparatedIdentifiers(segments) +
              ", totalSize=" + totalSize +
              '}';
     }

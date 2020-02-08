@@ -136,7 +136,7 @@ public class FiniteFirehoseProcessor
                 // If those segments are not pushed here, the remaining available space in appenderator will be kept
                 // small which could lead to smaller segments.
                 final SegmentsAndMetadata pushed = driver.pushAllAndClear(pushTimeout);
-                LOG.info("Pushed segments[%s]", pushed.getSegments());
+                LOG.debugSegments(pushed.getSegments(), "Pushed segments");
               }
             }
           } else {
@@ -155,7 +155,8 @@ public class FiniteFirehoseProcessor
       }
 
       final SegmentsAndMetadata pushed = driver.pushAllAndClear(pushTimeout);
-      LOG.info("Pushed segments[%s]", pushed.getSegments());
+      LOG.debugSegments(pushed.getSegments(), "Pushed segments");
+
       return pushed;
     }
   }
@@ -169,7 +170,7 @@ public class FiniteFirehoseProcessor
     }
 
     if (logParseExceptions) {
-      LOG.error(e, "Encountered parse exception:");
+      LOG.error(e, "Encountered parse exception");
     }
 
     if (buildSegmentsSavedParseExceptions != null) {
