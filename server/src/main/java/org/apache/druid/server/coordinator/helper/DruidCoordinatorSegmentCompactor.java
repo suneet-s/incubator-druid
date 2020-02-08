@@ -206,10 +206,11 @@ public class DruidCoordinatorSegmentCompactor implements DruidCoordinatorHelper
             newAutoCompactionContext(config.getTaskContext())
         );
         LOG.info(
-            "Submitted a compactTask[%s] for segments %s",
+            "Submitted a compactionTask[%s] for %s segments",
             taskId,
-            Iterables.transform(segmentsToCompact, DataSegment::getId)
+            segmentsToCompact.size()
         );
+        LOG.infoSegments(segmentsToCompact, "Compacting segments");
         // Count the compaction task itself + its sub tasks
         numSubmittedTasks += findNumMaxConcurrentSubTasks(config.getTuningConfig()) + 1;
       } else {
