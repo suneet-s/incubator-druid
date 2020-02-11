@@ -20,7 +20,6 @@
 package org.apache.druid.server.coordinator.helper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import org.apache.druid.client.indexing.ClientCompactQuery;
