@@ -124,7 +124,6 @@ public class StreamAppenderatorDriverTest extends EasyMockSupport
   {
     EasyMock.verify(dataSegmentKiller);
 
-    driver.clear();
     driver.close();
   }
 

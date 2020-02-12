@@ -1298,8 +1298,9 @@ public class AppenderatorImpl implements Appenderator
     synchronized (indexToPersist) {
       if (indexToPersist.hasSwapped()) {
         log.info(
-            "Segment[%s], Hydrant[%s] already swapped. Ignoring request to persist.",
-            identifier, indexToPersist
+            "Segment[%s] hydrant[%s] already swapped. Ignoring request to persist.",
+            identifier,
+            indexToPersist
         );
         return 0;
       }
