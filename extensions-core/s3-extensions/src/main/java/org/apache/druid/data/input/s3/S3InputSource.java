@@ -19,11 +19,15 @@
 
 package org.apache.druid.data.input.s3;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import org.apache.druid.data.input.InputSplit;
 import org.apache.druid.data.input.impl.CloudObjectInputSource;
@@ -36,31 +40,79 @@ import org.apache.druid.storage.s3.ServerSideEncryptingAmazonS3;
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class S3InputSource extends CloudObjectInputSource<S3Entity>
 {
   private static final int MAX_LISTING_LENGTH = 1024;
+  // We lazily initialize ServerSideEncryptingAmazonS3 to avoid costly s3 operation when we only need S3InputSource
+  // for stored information (such as for task logs) and not for ingestion.
+  // (This cost only applies for new ServerSideEncryptingAmazonS3 created with s3InputSourceConfig given).
+  private final Supplier<ServerSideEncryptingAmazonS3> s3ClientSupplier;
+  @JsonProperty("properties")
+  private final S3InputSourceConfig s3InputSourceConfig;
 
-  private final ServerSideEncryptingAmazonS3 s3Client;
-
+  /**
+   * Constructor for S3InputSource
+   * @param s3Client                The default ServerSideEncryptingAmazonS3 client built with all default configs
+   *                                from Guice. This injected singleton client is use when {@param s3InputSourceConfig}
+   *                                is not provided and hence, we can skip building a new client from
+   *                                {@param s3ClientBuilder}
+   * @param s3ClientBuilder         Use for building a new s3Client to use instead of the default injected
+   *                                {@param s3Client}. The configurations of the client can be changed
+   *                                before being built
+   * @param uris                    User provided uris to read input data
+   * @param prefixes                User provided prefixes to read input data
+   * @param objects                 User provided cloud objects values to read input data
+   * @param s3InputSourceConfig     User provided properties for overriding the default S3 configuration
+   *
+   */
   @JsonCreator
   public S3InputSource(
       @JacksonInject ServerSideEncryptingAmazonS3 s3Client,
+      @JacksonInject ServerSideEncryptingAmazonS3.Builder s3ClientBuilder,
       @JsonProperty("uris") @Nullable List<URI> uris,
       @JsonProperty("prefixes") @Nullable List<URI> prefixes,
-      @JsonProperty("objects") @Nullable List<CloudObjectLocation> objects
+      @JsonProperty("objects") @Nullable List<CloudObjectLocation> objects,
+      @JsonProperty("properties") @Nullable S3InputSourceConfig s3InputSourceConfig
   )
   {
     super(S3StorageDruidModule.SCHEME, uris, prefixes, objects);
-    this.s3Client = Preconditions.checkNotNull(s3Client, "s3Client");
+    Preconditions.checkNotNull(s3Client, "s3Client");
+    this.s3InputSourceConfig = s3InputSourceConfig;
+    this.s3ClientSupplier = Suppliers.memoize(
+        () -> {
+          if (s3ClientBuilder != null && s3InputSourceConfig != null) {
+            if (s3InputSourceConfig.isCredentialsConfigured()) {
+              AWSStaticCredentialsProvider credentials = new AWSStaticCredentialsProvider(
+                  new BasicAWSCredentials(
+                      s3InputSourceConfig.getAccessKeyId().getPassword(),
+                      s3InputSourceConfig.getSecretAccessKey().getPassword()
+                  )
+              );
+              s3ClientBuilder.getAmazonS3ClientBuilder().withCredentials(credentials);
+            }
+            return s3ClientBuilder.build();
+          } else {
+            return s3Client;
+          }
+        }
+    );
+  }
+
+  @Nullable
+  @JsonProperty("properties")
+  public S3InputSourceConfig getS3InputSourceConfig()
+  {
+    return s3InputSourceConfig;
   }
 
   @Override
   protected S3Entity createEntity(InputSplit<CloudObjectLocation> split)
   {
-    return new S3Entity(s3Client, split.get());
+    return new S3Entity(s3ClientSupplier.get(), split.get());
   }
 
   @Override
@@ -74,7 +126,36 @@ public class S3InputSource extends CloudObjectInputSource<S3Entity>
   @Override
   public SplittableInputSource<CloudObjectLocation> withSplit(InputSplit<CloudObjectLocation> split)
   {
-    return new S3InputSource(s3Client, null, null, ImmutableList.of(split.get()));
+    return new S3InputSource(
+      s3ClientSupplier.get(),
+      null,
+      null,
+      null,
+      ImmutableList.of(split.get()),
+      getS3InputSourceConfig()
+    );
+  }
+
+  @Override
+  public int hashCode()
+  {
+    return Objects.hash(super.hashCode(), s3InputSourceConfig);
+  }
+
+  @Override
+  public boolean equals(Object o)
+  {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    S3InputSource that = (S3InputSource) o;
+    return Objects.equals(s3InputSourceConfig, that.s3InputSourceConfig);
   }
 
   @Override
@@ -84,11 +165,12 @@ public class S3InputSource extends CloudObjectInputSource<S3Entity>
            "uris=" + getUris() +
            ", prefixes=" + getPrefixes() +
            ", objects=" + getObjects() +
+           ", s3InputSourceConfig=" + getS3InputSourceConfig() +
            '}';
   }
 
   private Iterable<S3ObjectSummary> getIterableObjectsFromPrefixes()
   {
-    return () -> S3Utils.objectSummaryIterator(s3Client, getPrefixes(), MAX_LISTING_LENGTH);
+    return () -> S3Utils.objectSummaryIterator(s3ClientSupplier.get(), getPrefixes(), MAX_LISTING_LENGTH);
   }
 }
