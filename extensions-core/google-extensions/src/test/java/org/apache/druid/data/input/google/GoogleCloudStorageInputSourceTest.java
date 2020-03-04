@@ -57,6 +57,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -260,6 +261,7 @@ public class GoogleCloudStorageInputSourceTest extends InitializedNullHandlingTe
       StorageObject s = new StorageObject();
       s.setBucket(bucket);
       s.setName(uri.getPath());
+      s.setSize(BigInteger.valueOf(CONTENT.length));
       mockObjects.add(s);
     }
     Objects response = new Objects();
