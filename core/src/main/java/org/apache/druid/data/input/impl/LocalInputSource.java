@@ -21,6 +21,7 @@ package org.apache.druid.data.input.impl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import org.apache.commons.io.FileUtils;
@@ -82,12 +83,16 @@ public class LocalInputSource extends AbstractInputSource implements SplittableI
     return Iterators.size(getFileIterator());
   }
 
-  private Iterator<File> getFileIterator()
+  @VisibleForTesting
+  Iterator<File> getFileIterator()
   {
-    return FileUtils.iterateFiles(
-        Preconditions.checkNotNull(baseDir).getAbsoluteFile(),
-        new WildcardFileFilter(filter),
-        TrueFileFilter.INSTANCE
+    return Iterators.filter(
+        FileUtils.iterateFiles(
+            Preconditions.checkNotNull(baseDir).getAbsoluteFile(),
+            new WildcardFileFilter(filter),
+            TrueFileFilter.INSTANCE
+        ),
+        file -> file.length() > 0
     );
   }
 

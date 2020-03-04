@@ -350,8 +350,8 @@ public class S3InputSourceTest extends InitializedNullHandlingTest
   public void testWithPrefixesSplit()
   {
     EasyMock.reset(S3_CLIENT);
-    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_URIS.get(0)));
-    expectListObjects(PREFIXES.get(1), ImmutableList.of(EXPECTED_URIS.get(1)));
+    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_URIS.get(0)), CONTENT);
+    expectListObjects(PREFIXES.get(1), ImmutableList.of(EXPECTED_URIS.get(1)), CONTENT);
     EasyMock.replay(S3_CLIENT);
 
     S3InputSource inputSource = new S3InputSource(
@@ -373,11 +373,38 @@ public class S3InputSourceTest extends InitializedNullHandlingTest
   }
 
   @Test
+  public void testCreateSplitsWithEmptyObjectsIteratingOnlyNonEmptyObjects()
+  {
+    EasyMock.reset(S3_CLIENT);
+    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_URIS.get(0)), CONTENT);
+    expectListObjects(PREFIXES.get(1), ImmutableList.of(EXPECTED_URIS.get(1)), new byte[0]);
+    EasyMock.replay(S3_CLIENT);
 
+    S3InputSource inputSource = new S3InputSource(
+        SERVICE,
+        SERVER_SIDE_ENCRYPTING_AMAZON_S3_BUILDER,
+        null,
+        PREFIXES,
+        null,
+        null
+    );
+
+    Stream<InputSplit<CloudObjectLocation>> splits = inputSource.createSplits(
+        new JsonInputFormat(JSONPathSpec.DEFAULT, null),
+        null
+    );
+    Assert.assertEquals(
+        ImmutableList.of(new CloudObjectLocation(EXPECTED_URIS.get(0))),
+        splits.map(InputSplit::get).collect(Collectors.toList())
+    );
+    EasyMock.verify(S3_CLIENT);
+  }
+
+  @Test
   public void testAccessDeniedWhileListingPrefix()
   {
     EasyMock.reset(S3_CLIENT);
-    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_URIS.get(0)));
+    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_URIS.get(0)), CONTENT);
     expectListObjectsAndThrowAccessDenied(EXPECTED_URIS.get(1));
     EasyMock.replay(S3_CLIENT);
 
@@ -405,8 +432,8 @@ public class S3InputSourceTest extends InitializedNullHandlingTest
   public void testReader() throws IOException
   {
     EasyMock.reset(S3_CLIENT);
-    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_URIS.get(0)));
-    expectListObjects(EXPECTED_URIS.get(1), ImmutableList.of(EXPECTED_URIS.get(1)));
+    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_URIS.get(0)), CONTENT);
+    expectListObjects(EXPECTED_URIS.get(1), ImmutableList.of(EXPECTED_URIS.get(1)), CONTENT);
     expectGetObject(EXPECTED_URIS.get(0));
     expectGetObject(EXPECTED_URIS.get(1));
     EasyMock.replay(S3_CLIENT);
@@ -448,8 +475,8 @@ public class S3InputSourceTest extends InitializedNullHandlingTest
   public void testCompressedReader() throws IOException
   {
     EasyMock.reset(S3_CLIENT);
-    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_COMPRESSED_URIS.get(0)));
-    expectListObjects(EXPECTED_COMPRESSED_URIS.get(1), ImmutableList.of(EXPECTED_COMPRESSED_URIS.get(1)));
+    expectListObjects(PREFIXES.get(0), ImmutableList.of(EXPECTED_COMPRESSED_URIS.get(0)), CONTENT);
+    expectListObjects(EXPECTED_COMPRESSED_URIS.get(1), ImmutableList.of(EXPECTED_COMPRESSED_URIS.get(1)), CONTENT);
     expectGetObjectCompressed(EXPECTED_COMPRESSED_URIS.get(0));
     expectGetObjectCompressed(EXPECTED_COMPRESSED_URIS.get(1));
     EasyMock.replay(S3_CLIENT);
@@ -487,7 +514,7 @@ public class S3InputSourceTest extends InitializedNullHandlingTest
     EasyMock.verify(S3_CLIENT);
   }
 
-  private static void expectListObjects(URI prefix, List<URI> uris)
+  private static void expectListObjects(URI prefix, List<URI> uris, byte[] content)
   {
     final ListObjectsV2Result result = new ListObjectsV2Result();
     result.setBucketName(prefix.getAuthority());
@@ -498,6 +525,7 @@ public class S3InputSourceTest extends InitializedNullHandlingTest
       final S3ObjectSummary objectSummary = new S3ObjectSummary();
       objectSummary.setBucketName(bucket);
       objectSummary.setKey(key);
+      objectSummary.setSize(content.length);
       result.getObjectSummaries().add(objectSummary);
     }
 
