@@ -84,10 +84,13 @@ public class LocalInputSource extends AbstractInputSource implements SplittableI
 
   private Iterator<File> getFileIterator()
   {
-    return FileUtils.iterateFiles(
-        Preconditions.checkNotNull(baseDir).getAbsoluteFile(),
-        new WildcardFileFilter(filter),
-        TrueFileFilter.INSTANCE
+    return Iterators.filter(
+        FileUtils.iterateFiles(
+            Preconditions.checkNotNull(baseDir).getAbsoluteFile(),
+            new WildcardFileFilter(filter),
+            TrueFileFilter.INSTANCE
+        ),
+        file -> file.length() > 0
     );
   }
 

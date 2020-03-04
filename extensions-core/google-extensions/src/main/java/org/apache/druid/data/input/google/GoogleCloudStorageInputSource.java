@@ -39,7 +39,7 @@ import java.util.stream.StreamSupport;
 
 public class GoogleCloudStorageInputSource extends CloudObjectInputSource<GoogleCloudStorageEntity>
 {
-  static final String SCHEME = "gs";
+  public static final String SCHEME = "gs";
   private static final int MAX_LISTING_LENGTH = 1024;
 
   private final GoogleStorage storage;
@@ -78,7 +78,7 @@ public class GoogleCloudStorageInputSource extends CloudObjectInputSource<Google
 
   private CloudObjectLocation byteSourceFromStorageObject(final StorageObject storageObject)
   {
-    return new CloudObjectLocation(storageObject.getBucket(), storageObject.getName());
+    return GoogleUtils.objectToCloudObjectLocation(storageObject);
   }
 
   private Iterable<StorageObject> storageObjectIterable()

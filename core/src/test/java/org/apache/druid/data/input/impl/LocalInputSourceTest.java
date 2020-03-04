@@ -20,12 +20,17 @@
 package org.apache.druid.data.input.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import org.apache.druid.data.input.InputSource;
+import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class LocalInputSourceTest
 {
@@ -37,5 +42,27 @@ public class LocalInputSourceTest
     final byte[] json = mapper.writeValueAsBytes(source);
     final LocalInputSource fromJson = (LocalInputSource) mapper.readValue(json, InputSource.class);
     Assert.assertEquals(source, fromJson);
+  }
+
+  @Test
+  public void testFileIteratorWithEmptyFilesIteratingNonEmptyFilesOnly()
+  {
+    final Set<File> files = new HashSet<>(mockFiles(10, 5));
+    files.addAll(mockFiles(10, 0));
+    final LocalInputSource inputSource = new LocalInputSource(null, null, files);
+    List<File> iteratedFiles = Lists.newArrayList(inputSource.getFileIterator());
+    Assert.assertTrue(iteratedFiles.stream().allMatch(file -> file.length() > 0));
+  }
+
+  private static Set<File> mockFiles(int numFiles, long fileSize)
+  {
+    final Set<File> files = new HashSet<>();
+    for (int i = 0; i < numFiles; i++) {
+      final File file = EasyMock.niceMock(File.class);
+      EasyMock.expect(file.length()).andReturn(fileSize).anyTimes();
+      EasyMock.replay(file);
+      files.add(file);
+    }
+    return files;
   }
 }

@@ -221,16 +221,16 @@ The tuningConfig is optional and default parameters will be used if no tuningCon
 |chatHandlerTimeout|Timeout for reporting the pushed segments in worker tasks.|PT10S|no|
 |chatHandlerNumRetries|Retries for reporting the pushed segments in worker tasks.|5|no|
 
-### `splitHintSpec`
+### Split Hint Spec
 
-`SplitHintSpec` is used to give a hint when the supervisor task creates input splits.
+The split hint spec is used to give a hint when the supervisor task creates input splits.
 Note that each worker task processes a single input split. You can control the amount of data each worker task will read during the first phase.
 
 Currently only one splitHintSpec, i.e., `segments`, is available.
 
-#### `SegmentsSplitHintSpec`
+#### Segments Split Hint Spec
 
-`SegmentsSplitHintSpec` is used only for [`DruidInputSource`](#druid-input-source) (and legacy [`IngestSegmentFirehose`](#ingestsegmentfirehose)).
+The segments split hint spec is used only for [`DruidInputSource`](#druid-input-source) (and legacy [`IngestSegmentFirehose`](#ingestsegmentfirehose)).
 
 |property|description|default|required?|
 |--------|-----------|-------|---------|
@@ -836,9 +836,11 @@ Sample specs:
 |--------|-----------|-------|---------|
 |type|This should be `s3`.|None|yes|
 |uris|JSON array of URIs where S3 objects to be ingested are located.|None|`uris` or `prefixes` or `objects` must be set|
-|prefixes|JSON array of URI prefixes for the locations of S3 objects to be ingested.|None|`uris` or `prefixes` or `objects` must be set|
+|prefixes|JSON array of URI prefixes for the locations of S3 objects to be ingested. Empty objects starting with one of the given prefixes will be skipped.|None|`uris` or `prefixes` or `objects` must be set|
 |objects|JSON array of S3 Objects to be ingested.|None|`uris` or `prefixes` or `objects` must be set|
 |properties|Properties Object for overriding the default S3 configuration. See below for more information.|None|No (defaults will be used if not given)
+
+Note that the S3 input source will skip all empty objects only when `prefixes` is specified.
 
 S3 Object:
 
@@ -923,8 +925,10 @@ Sample specs:
 |--------|-----------|-------|---------|
 |type|This should be `google`.|None|yes|
 |uris|JSON array of URIs where Google Cloud Storage objects to be ingested are located.|None|`uris` or `prefixes` or `objects` must be set|
-|prefixes|JSON array of URI prefixes for the locations of Google Cloud Storage objects to be ingested.|None|`uris` or `prefixes` or `objects` must be set|
+|prefixes|JSON array of URI prefixes for the locations of Google Cloud Storage objects to be ingested. Empty objects starting with one of the given prefixes will be skipped.|None|`uris` or `prefixes` or `objects` must be set|
 |objects|JSON array of Google Cloud Storage objects to be ingested.|None|`uris` or `prefixes` or `objects` must be set|
+
+Note that the Google Cloud Storage input source will skip all empty objects only when `prefixes` is specified.
 
 Google Cloud Storage object:
 
@@ -1011,7 +1015,7 @@ Sample specs:
 |property|description|default|required?|
 |--------|-----------|-------|---------|
 |type|This should be `hdfs`.|None|yes|
-|paths|HDFS paths. Can be either a JSON array or comma-separated string of paths. Wildcards like `*` are supported in these paths.|None|yes|
+|paths|HDFS paths. Can be either a JSON array or comma-separated string of paths. Wildcards like `*` are supported in these paths. Empty files located under one of the given paths will be skipped.|None|yes|
 
 You can also ingest from cloud storage using the HDFS input source.
 However, if you want to read from AWS S3 or Google Cloud Storage, consider using
@@ -1150,8 +1154,8 @@ Sample spec:
 |property|description|required?|
 |--------|-----------|---------|
 |type|This should be "local".|yes|
-|filter|A wildcard filter for files. See [here](http://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/filefilter/WildcardFileFilter.html) for more information.|yes|
-|baseDir|directory to search recursively for files to be ingested. |yes|
+|filter|A wildcard filter for files. See [here](http://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/filefilter/WildcardFileFilter.html) for more information.|yes if `baseDir` is specified|
+|baseDir|Directory to search recursively for files to be ingested. Empty files under the `baseDir` will be skipped.|At least one of `baseDir` or `files` should be specified|
 
 ### Druid Input Source
 
@@ -1446,7 +1450,7 @@ This firehose will accept any type of parser, but will only utilize the list of 
 |dimensions|The list of dimensions to select. If left empty, no dimensions are returned. If left null or not defined, all dimensions are returned. |no|
 |metrics|The list of metrics to select. If left empty, no metrics are returned. If left null or not defined, all metrics are selected.|no|
 |filter| See [Filters](../querying/filters.md)|no|
-|maxInputSegmentBytesPerTask|Deprecated. Use [SegmentsSplitHintSpec](#segmentssplithintspec) instead. When used with the native parallel index task, the maximum number of bytes of input segments to process in a single task. If a single segment is larger than this number, it will be processed by itself in a single task (input segments are never split across tasks). Defaults to 150MB.|no|
+|maxInputSegmentBytesPerTask|Deprecated. Use [Segments Split Hint Spec](#segments-split-hint-spec) instead. When used with the native parallel index task, the maximum number of bytes of input segments to process in a single task. If a single segment is larger than this number, it will be processed by itself in a single task (input segments are never split across tasks). Defaults to 150MB.|no|
 
 <a name="sql-firehose"></a>
 
