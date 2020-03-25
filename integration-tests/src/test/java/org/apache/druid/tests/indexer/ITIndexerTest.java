@@ -90,9 +90,7 @@ public class ITIndexerTest extends AbstractITBatchIndexTest
           INDEX_WITH_TIMESTAMP_DATASOURCE,
           INDEX_WITH_TIMESTAMP_TASK,
           INDEX_WITH_TIMESTAMP_QUERIES_RESOURCE,
-          false,
-          true,
-          true
+          false
       );
       doReindexTest(
           INDEX_WITH_TIMESTAMP_DATASOURCE,
