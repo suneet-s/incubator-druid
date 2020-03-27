@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache.druid</groupId>
         <artifactId>druid</artifactId>
-        <version>0.17.0-iap8-SNAPSHOT</version>
+        <version>0.17.0-iap9</version>
     </parent>
 
     <dependencies>
