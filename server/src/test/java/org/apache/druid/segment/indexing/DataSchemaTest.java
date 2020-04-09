@@ -286,7 +286,7 @@ public class DataSchemaTest
     // Jackson creates a default type parser (StringInputRowParser) for an invalid type.
     schema.getParser();
   }
-  
+
   @Test
   public void testEmptyDatasource()
   {
