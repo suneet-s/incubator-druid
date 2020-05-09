@@ -205,6 +205,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.9.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>pl.pragmatists</groupId>
             <artifactId>JUnitParams</artifactId>
             <scope>test</scope>
@@ -242,6 +248,7 @@
                     </annotationProcessorPaths>
                     <annotationProcessors>
                         <annotationProcessor>org.apache.druid.annotations.SubclassesMustBePublicAnnotationProcessor</annotationProcessor>
+                        <annotationProcessor>org.apache.druid.annotations.SubclassesMustOverrideEqualsAndHashCodeAnnotationProcessor</annotationProcessor>
                     </annotationProcessors>
                 </configuration>
             </plugin>

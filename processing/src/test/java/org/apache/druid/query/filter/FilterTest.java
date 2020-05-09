@@ -17,22 +17,29 @@
  * under the License.
  */
 
-package org.apache.druid.annotations;
+package org.apache.druid.query.filter;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.apache.druid.annotations.SubclassesMustOverrideEqualsAndHashCode;
+import org.junit.Assert;
+import org.junit.Test;
+import org.reflections.Reflections;
 
-/**
- * An annotation that tells all subclasses of the annotated class to override equals.
- */
-@Documented
-@Inherited
-@Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.TYPE)
-public @interface SubclassesMustOverrideEquals
+import java.lang.reflect.Method;
+import java.util.Set;
+
+public class FilterTest
 {
+  @Test
+  public void testCustomEquals() throws NoSuchMethodException
+  {
+    Reflections reflections = new Reflections("org.apache.druid");
+    Set<Class<?>> classes = reflections.getTypesAnnotatedWith(SubclassesMustOverrideEqualsAndHashCode.class);
+    for (Class<?> clazz : classes) {
+      if (clazz.isInterface()) {
+        continue;
+      }
+      Method m = clazz.getMethod("hashCode");
+      Assert.assertNotSame(clazz.getName() + " does not implment hashCode", Object.class, m.getDeclaringClass());
+    }
+  }
 }
