@@ -28,6 +28,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import org.apache.druid.collections.bitmap.ImmutableBitmap;
 import org.apache.druid.query.BitmapResultFactory;
 import org.apache.druid.query.Query;
+import org.apache.druid.query.QueryContexts;
 import org.apache.druid.query.filter.BitmapIndexSelector;
 import org.apache.druid.query.filter.DimFilter;
 import org.apache.druid.query.filter.DruidPredicateFactory;
@@ -59,7 +60,6 @@ import java.util.stream.Collectors;
  */
 public class Filters
 {
-  private static final String CTX_KEY_USE_FILTER_CNF = "useFilterCNF";
 
   /**
    * Convert a list of DimFilters to a list of Filters.
@@ -423,7 +423,7 @@ public class Filters
     if (filter == null) {
       return null;
     }
-    boolean useCNF = query.getContextBoolean(CTX_KEY_USE_FILTER_CNF, false);
+    boolean useCNF = query.getContextBoolean(QueryContexts.USE_FILTER_CNF_KEY, QueryContexts.DEFAULT_USE_FILTER_CNF);
     return useCNF ? Filters.toCnf(filter) : filter;
   }
 
@@ -497,5 +497,28 @@ public class Filters
     }
 
     return new AndFilter(filterList);
+  }
+
+  /**
+   * Create a filter representing an OR relationship across a set of filters.
+   *
+   * @param filterSet Set of filters
+   *
+   * @return If filterSet has more than one element, return an OR filter composed of the filters from filterSet
+   * If filterSet has a single element, return that element alone
+   * If filterSet is empty, return null
+   */
+  @Nullable
+  public static Filter or(Set<Filter> filterSet)
+  {
+    if (filterSet.isEmpty()) {
+      return null;
+    }
+
+    if (filterSet.size() == 1) {
+      return filterSet.iterator().next();
+    }
+
+    return new OrFilter(filterSet);
   }
 }
