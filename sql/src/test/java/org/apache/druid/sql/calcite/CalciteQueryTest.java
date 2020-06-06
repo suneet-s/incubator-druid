@@ -145,7 +145,7 @@ public class CalciteQueryTest extends BaseCalciteQueryTest
     testQuery(
         "SELECT 1 + 1, dim1 FROM foo LIMIT 1",
         ImmutableList.of(
-            newScanQueryBuilder()
+            newScanQueryBuilder() 
                 .dataSource(CalciteTests.DATASOURCE1)
                 .intervals(querySegmentSpec(Filtration.eternity()))
                 .virtualColumns(expressionVirtualColumn("v0", "2", ValueType.LONG))
