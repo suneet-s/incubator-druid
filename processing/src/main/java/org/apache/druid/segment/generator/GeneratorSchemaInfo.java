@@ -17,22 +17,25 @@
  * under the License.
  */
 
-package org.apache.druid.benchmark.datagen;
+package org.apache.druid.segment.generator;
 
+import org.apache.druid.data.input.impl.DimensionSchema;
+import org.apache.druid.data.input.impl.DimensionsSpec;
 import org.apache.druid.query.aggregation.AggregatorFactory;
 import org.joda.time.Interval;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class BenchmarkSchemaInfo
+public class GeneratorSchemaInfo
 {
-  private List<BenchmarkColumnSchema> columnSchemas;
+  private List<GeneratorColumnSchema> columnSchemas;
   private List<AggregatorFactory> aggs;
   private Interval dataInterval;
   private boolean withRollup;
 
-  public BenchmarkSchemaInfo(
-      List<BenchmarkColumnSchema> columnSchemas,
+  public GeneratorSchemaInfo(
+      List<GeneratorColumnSchema> columnSchemas,
       List<AggregatorFactory> aggs,
       Interval dataInterval,
       boolean withRollup
@@ -44,9 +47,19 @@ public class BenchmarkSchemaInfo
     this.withRollup = withRollup;
   }
 
-  public List<BenchmarkColumnSchema> getColumnSchemas()
+  public List<GeneratorColumnSchema> getColumnSchemas()
   {
     return columnSchemas;
+  }
+
+  public DimensionsSpec getDimensionsSpec()
+  {
+    List<DimensionSchema> specs = getColumnSchemas().stream()
+                                                    .filter(x -> !x.isMetric())
+                                                    .map(GeneratorColumnSchema::getDimensionSchema)
+                                                    .collect(Collectors.toList());
+
+    return new DimensionsSpec(specs);
   }
 
   public List<AggregatorFactory> getAggs()

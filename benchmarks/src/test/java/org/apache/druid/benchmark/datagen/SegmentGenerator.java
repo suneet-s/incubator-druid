@@ -19,16 +19,9 @@
 
 package org.apache.druid.benchmark.datagen;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.Hashing;
 import org.apache.druid.common.config.NullHandling;
 import org.apache.druid.data.input.InputRow;
-import org.apache.druid.data.input.impl.DimensionSchema;
-import org.apache.druid.data.input.impl.DimensionsSpec;
-import org.apache.druid.data.input.impl.DoubleDimensionSchema;
-import org.apache.druid.data.input.impl.FloatDimensionSchema;
-import org.apache.druid.data.input.impl.LongDimensionSchema;
-import org.apache.druid.data.input.impl.StringDimensionSchema;
 import org.apache.druid.java.util.common.FileUtils;
 import org.apache.druid.java.util.common.ISE;
 import org.apache.druid.java.util.common.StringUtils;
@@ -42,6 +35,8 @@ import org.apache.druid.segment.QueryableIndex;
 import org.apache.druid.segment.QueryableIndexIndexableAdapter;
 import org.apache.druid.segment.TestHelper;
 import org.apache.druid.segment.data.RoaringBitmapSerdeFactory;
+import org.apache.druid.segment.generator.DataGenerator;
+import org.apache.druid.segment.generator.GeneratorSchemaInfo;
 import org.apache.druid.segment.incremental.IncrementalIndexSchema;
 import org.apache.druid.segment.serde.ComplexMetrics;
 import org.apache.druid.segment.writeout.OffHeapMemorySegmentWriteOutMediumFactory;
@@ -107,7 +102,7 @@ public class SegmentGenerator implements Closeable
 
   public QueryableIndex generate(
       final DataSegment dataSegment,
-      final BenchmarkSchemaInfo schemaInfo,
+      final GeneratorSchemaInfo schemaInfo,
       final Granularity granularity,
       final int numRows
   )
@@ -138,37 +133,15 @@ public class SegmentGenerator implements Closeable
 
     log.info("Writing segment with hash[%s] to directory[%s].", dataHash, outDir);
 
-    final BenchmarkDataGenerator dataGenerator = new BenchmarkDataGenerator(
+    final DataGenerator dataGenerator = new DataGenerator(
         schemaInfo.getColumnSchemas(),
         dataSegment.getId().hashCode(), /* Use segment identifier hashCode as seed */
         schemaInfo.getDataInterval(),
         numRows
     );
 
-    final List<DimensionSchema> dimensions = new ArrayList<>();
-    for (BenchmarkColumnSchema columnSchema : schemaInfo.getColumnSchemas()) {
-      if (schemaInfo.getAggs().stream().noneMatch(agg -> agg.getName().equals(columnSchema.getName()))) {
-        switch (columnSchema.getType()) {
-          case STRING:
-            dimensions.add(new StringDimensionSchema(columnSchema.getName()));
-            break;
-          case LONG:
-            dimensions.add(new LongDimensionSchema(columnSchema.getName()));
-            break;
-          case DOUBLE:
-            dimensions.add(new DoubleDimensionSchema(columnSchema.getName()));
-            break;
-          case FLOAT:
-            dimensions.add(new FloatDimensionSchema(columnSchema.getName()));
-            break;
-          default:
-            throw new ISE("Unhandleable type[%s]", columnSchema.getType());
-        }
-      }
-    }
-
     final IncrementalIndexSchema indexSchema = new IncrementalIndexSchema.Builder()
-        .withDimensionsSpec(new DimensionsSpec(dimensions, ImmutableList.of(), ImmutableList.of()))
+        .withDimensionsSpec(schemaInfo.getDimensionsSpec())
         .withMetrics(schemaInfo.getAggsArray())
         .withRollup(schemaInfo.isWithRollup())
         .withQueryGranularity(granularity)
