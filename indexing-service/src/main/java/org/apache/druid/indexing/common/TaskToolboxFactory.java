@@ -72,7 +72,7 @@ public class TaskToolboxFactory
   private final SegmentHandoffNotifierFactory handoffNotifierFactory;
   private final Provider<QueryRunnerFactoryConglomerate> queryRunnerFactoryConglomerateProvider;
   private final ExecutorService queryExecutorService;
-  private final MonitorScheduler monitorScheduler;
+  private final Provider<MonitorScheduler> monitorSchedulerProvider;
   private final SegmentLoaderFactory segmentLoaderFactory;
   private final ObjectMapper jsonMapper;
   private final IndexIO indexIO;
@@ -102,7 +102,7 @@ public class TaskToolboxFactory
       SegmentHandoffNotifierFactory handoffNotifierFactory,
       Provider<QueryRunnerFactoryConglomerate> queryRunnerFactoryConglomerateProvider,
       @Processing ExecutorService queryExecutorService,
-      MonitorScheduler monitorScheduler,
+      Provider<MonitorScheduler> monitorSchedulerProvider,
       SegmentLoaderFactory segmentLoaderFactory,
       @Json ObjectMapper jsonMapper,
       IndexIO indexIO,
@@ -131,7 +131,7 @@ public class TaskToolboxFactory
     this.handoffNotifierFactory = handoffNotifierFactory;
     this.queryRunnerFactoryConglomerateProvider = queryRunnerFactoryConglomerateProvider;
     this.queryExecutorService = queryExecutorService;
-    this.monitorScheduler = monitorScheduler;
+    this.monitorSchedulerProvider = monitorSchedulerProvider;
     this.segmentLoaderFactory = segmentLoaderFactory;
     this.jsonMapper = jsonMapper;
     this.indexIO = Preconditions.checkNotNull(indexIO, "Null IndexIO");
@@ -164,7 +164,7 @@ public class TaskToolboxFactory
         handoffNotifierFactory,
         queryRunnerFactoryConglomerateProvider,
         queryExecutorService,
-        monitorScheduler,
+        monitorSchedulerProvider,
         segmentLoaderFactory.manufacturate(taskWorkDir),
         jsonMapper,
         taskWorkDir,
