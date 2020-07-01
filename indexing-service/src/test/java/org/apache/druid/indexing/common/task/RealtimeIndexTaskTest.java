@@ -988,7 +988,7 @@ public class RealtimeIndexTaskTest
         handoffNotifierFactory,
         () -> conglomerate,
         Execs.directExecutor(), // queryExecutorService
-        EasyMock.createMock(MonitorScheduler.class),
+        () -> EasyMock.createMock(MonitorScheduler.class),
         new SegmentLoaderFactory(null, testUtils.getTestObjectMapper()),
         testUtils.getTestObjectMapper(),
         testUtils.getTestIndexIO(),

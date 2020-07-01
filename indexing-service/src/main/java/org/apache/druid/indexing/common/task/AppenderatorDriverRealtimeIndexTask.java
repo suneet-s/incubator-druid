@@ -322,7 +322,7 @@ public class AppenderatorDriverRealtimeIndexTask extends AbstractTask implements
       );
 
       // Set up metrics emission
-      toolbox.getMonitorScheduler().addMonitor(metricsMonitor);
+      toolbox.addMonitor(metricsMonitor);
 
       // Firehose temporary directory is automatically removed when this RealtimeIndexTask completes.
       FileUtils.forceMkdir(firehoseTempDir);
@@ -440,7 +440,7 @@ public class AppenderatorDriverRealtimeIndexTask extends AbstractTask implements
       appenderator.close();
       CloseQuietly.close(driver);
 
-      toolbox.getMonitorScheduler().removeMonitor(metricsMonitor);
+      toolbox.removeMonitor(metricsMonitor);
 
       if (appenderatorsManager.shouldTaskMakeNodeAnnouncements()) {
         toolbox.getDataSegmentServerAnnouncer().unannounce();

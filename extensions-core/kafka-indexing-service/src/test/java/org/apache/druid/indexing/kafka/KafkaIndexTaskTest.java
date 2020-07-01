@@ -2773,7 +2773,7 @@ public class KafkaIndexTaskTest
         handoffNotifierFactory,
         this::makeTimeseriesAndScanConglomerate,
         Execs.directExecutor(), // queryExecutorService
-        EasyMock.createMock(MonitorScheduler.class),
+        () -> EasyMock.createMock(MonitorScheduler.class),
         new SegmentLoaderFactory(null, testUtils.getTestObjectMapper()),
         testUtils.getTestObjectMapper(),
         testUtils.getTestIndexIO(),

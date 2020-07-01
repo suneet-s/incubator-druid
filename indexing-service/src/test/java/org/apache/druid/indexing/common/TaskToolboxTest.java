@@ -109,7 +109,7 @@ public class TaskToolboxTest
         mockHandoffNotifierFactory,
         () -> mockQueryRunnerFactoryConglomerate,
         mockQueryExecutorService,
-        mockMonitorScheduler,
+        () -> mockMonitorScheduler,
         mockSegmentLoaderFactory,
         ObjectMapper,
         mockIndexIO,

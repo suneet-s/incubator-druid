@@ -374,7 +374,7 @@ public class RealtimeIndexTask extends AbstractTask
       plumber.startJob();
 
       // Set up metrics emission
-      toolbox.getMonitorScheduler().addMonitor(metricsMonitor);
+      toolbox.addMonitor(metricsMonitor);
 
       // Firehose temporary directory is automatically removed when this RealtimeIndexTask completes.
       FileUtils.forceMkdir(firehoseTempDir);
@@ -470,7 +470,7 @@ public class RealtimeIndexTask extends AbstractTask
           if (firehose != null) {
             CloseQuietly.close(firehose);
           }
-          toolbox.getMonitorScheduler().removeMonitor(metricsMonitor);
+          toolbox.removeMonitor(metricsMonitor);
         }
       }
 

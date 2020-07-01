@@ -254,14 +254,12 @@ public class PartialSegmentGenerateTask extends AbstractBatchIndexTask
     final FireDepartmentMetrics fireDepartmentMetrics = fireDepartmentForMetrics.getMetrics();
     final RowIngestionMeters buildSegmentsMeters = new DropwizardRowIngestionMeters();
 
-    if (toolbox.getMonitorScheduler() != null) {
-      toolbox.getMonitorScheduler().addMonitor(
-          new RealtimeMetricsMonitor(
-              Collections.singletonList(fireDepartmentForMetrics),
-              Collections.singletonMap(DruidMetrics.TASK_ID, new String[]{getId()})
-          )
-      );
-    }
+    toolbox.addMonitor(
+        new RealtimeMetricsMonitor(
+            Collections.singletonList(fireDepartmentForMetrics),
+            Collections.singletonMap(DruidMetrics.TASK_ID, new String[]{getId()})
+        )
+    );
 
     final ParallelIndexTuningConfig tuningConfig = ingestionSchema.getTuningConfig();
     final HashedPartitionsSpec partitionsSpec = (HashedPartitionsSpec) tuningConfig.getGivenOrDefaultPartitionsSpec();
