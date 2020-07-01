@@ -21,6 +21,7 @@ package org.apache.druid.query;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Ordering;
 import org.apache.druid.guice.annotations.ExtensionPoint;
 import org.apache.druid.java.util.common.granularity.Granularity;
@@ -131,6 +132,16 @@ public interface Query<T>
   default String getSqlQueryId()
   {
     return null;
+  }
+
+  /**
+   * Returns a most specific ID of this query;
+   * If it is a regular query without subqueries, this will return its query ID.
+   * This method should be called after the relevant ID is assigned using {@link #withId}.
+   */
+  default String getMostSpecificId()
+  {
+    return Preconditions.checkNotNull(getId(), "queryId");
   }
 
   Query<T> withDataSource(DataSource dataSource);

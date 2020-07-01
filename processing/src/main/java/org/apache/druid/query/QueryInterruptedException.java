@@ -50,6 +50,7 @@ public class QueryInterruptedException extends RuntimeException
   public static final String RESOURCE_LIMIT_EXCEEDED = "Resource limit exceeded";
   public static final String UNAUTHORIZED = "Unauthorized request.";
   public static final String UNSUPPORTED_OPERATION = "Unsupported operation";
+  public static final String TRUNCATED_RESPONSE_CONTEXT = "Truncated response context";
   public static final String UNKNOWN_EXCEPTION = "Unknown exception";
 
   private final String errorCode;
@@ -141,6 +142,8 @@ public class QueryInterruptedException extends RuntimeException
       return RESOURCE_LIMIT_EXCEEDED;
     } else if (e instanceof UnsupportedOperationException) {
       return UNSUPPORTED_OPERATION;
+    } else if (e instanceof TruncatedResponseContextException) {
+      return TRUNCATED_RESPONSE_CONTEXT;
     } else {
       return UNKNOWN_EXCEPTION;
     }

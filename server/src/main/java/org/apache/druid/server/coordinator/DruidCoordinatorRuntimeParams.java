@@ -23,12 +23,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import org.apache.druid.client.DataSourcesSnapshot;
-import org.apache.druid.java.util.common.DateTimes;
 import org.apache.druid.java.util.emitter.service.ServiceEmitter;
 import org.apache.druid.metadata.MetadataRuleManager;
 import org.apache.druid.timeline.DataSegment;
 import org.apache.druid.timeline.VersionedIntervalTimeline;
-import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -66,7 +64,6 @@ public class DruidCoordinatorRuntimeParams
   private final CoordinatorDynamicConfig coordinatorDynamicConfig;
   private final CoordinatorCompactionConfig coordinatorCompactionConfig;
   private final CoordinatorStats stats;
-  private final DateTime balancerReferenceTimestamp;
   private final BalancerStrategy balancerStrategy;
 
   private DruidCoordinatorRuntimeParams(
@@ -82,7 +79,6 @@ public class DruidCoordinatorRuntimeParams
       CoordinatorDynamicConfig coordinatorDynamicConfig,
       CoordinatorCompactionConfig coordinatorCompactionConfig,
       CoordinatorStats stats,
-      DateTime balancerReferenceTimestamp,
       BalancerStrategy balancerStrategy
   )
   {
@@ -98,7 +94,6 @@ public class DruidCoordinatorRuntimeParams
     this.coordinatorDynamicConfig = coordinatorDynamicConfig;
     this.coordinatorCompactionConfig = coordinatorCompactionConfig;
     this.stats = stats;
-    this.balancerReferenceTimestamp = balancerReferenceTimestamp;
     this.balancerStrategy = balancerStrategy;
   }
 
@@ -168,11 +163,6 @@ public class DruidCoordinatorRuntimeParams
     return stats;
   }
 
-  public DateTime getBalancerReferenceTimestamp()
-  {
-    return balancerReferenceTimestamp;
-  }
-
   public BalancerStrategy getBalancerStrategy()
   {
     return balancerStrategy;
@@ -212,7 +202,6 @@ public class DruidCoordinatorRuntimeParams
         coordinatorDynamicConfig,
         coordinatorCompactionConfig,
         stats,
-        balancerReferenceTimestamp,
         balancerStrategy
     );
   }
@@ -232,7 +221,6 @@ public class DruidCoordinatorRuntimeParams
         coordinatorDynamicConfig,
         coordinatorCompactionConfig,
         stats,
-        balancerReferenceTimestamp,
         balancerStrategy
     );
   }
@@ -251,7 +239,6 @@ public class DruidCoordinatorRuntimeParams
     private CoordinatorDynamicConfig coordinatorDynamicConfig;
     private CoordinatorCompactionConfig coordinatorCompactionConfig;
     private CoordinatorStats stats;
-    private DateTime balancerReferenceTimestamp;
     private BalancerStrategy balancerStrategy;
 
     private Builder()
@@ -268,7 +255,6 @@ public class DruidCoordinatorRuntimeParams
       this.stats = new CoordinatorStats();
       this.coordinatorDynamicConfig = CoordinatorDynamicConfig.builder().build();
       this.coordinatorCompactionConfig = CoordinatorCompactionConfig.empty();
-      this.balancerReferenceTimestamp = DateTimes.nowUtc();
     }
 
     Builder(
@@ -284,7 +270,6 @@ public class DruidCoordinatorRuntimeParams
         CoordinatorDynamicConfig coordinatorDynamicConfig,
         CoordinatorCompactionConfig coordinatorCompactionConfig,
         CoordinatorStats stats,
-        DateTime balancerReferenceTimestamp,
         BalancerStrategy balancerStrategy
     )
     {
@@ -300,7 +285,6 @@ public class DruidCoordinatorRuntimeParams
       this.coordinatorDynamicConfig = coordinatorDynamicConfig;
       this.coordinatorCompactionConfig = coordinatorCompactionConfig;
       this.stats = stats;
-      this.balancerReferenceTimestamp = balancerReferenceTimestamp;
       this.balancerStrategy = balancerStrategy;
     }
 
@@ -320,7 +304,6 @@ public class DruidCoordinatorRuntimeParams
           coordinatorDynamicConfig,
           coordinatorCompactionConfig,
           stats,
-          balancerReferenceTimestamp,
           balancerStrategy
       );
     }
@@ -419,12 +402,6 @@ public class DruidCoordinatorRuntimeParams
     public Builder withCompactionConfig(CoordinatorCompactionConfig config)
     {
       this.coordinatorCompactionConfig = config;
-      return this;
-    }
-
-    public Builder withBalancerReferenceTimestamp(DateTime balancerReferenceTimestamp)
-    {
-      this.balancerReferenceTimestamp = balancerReferenceTimestamp;
       return this;
     }
 

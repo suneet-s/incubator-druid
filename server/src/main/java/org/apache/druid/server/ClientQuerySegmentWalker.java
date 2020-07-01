@@ -120,6 +120,7 @@ public class ClientQuerySegmentWalker implements QuerySegmentWalker
                 serverConfig,
                 new RetryQueryRunner<>(
                     baseClientRunner,
+                    baseClient::getQueryRunnerForSegments,
                     retryConfig,
                     objectMapper
                 )

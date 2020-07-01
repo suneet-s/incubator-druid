@@ -27,6 +27,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
@@ -79,6 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -888,7 +890,7 @@ public class GroupByQuery extends BaseQuery<ResultRow>
     private List<PostAggregator> postAggregatorSpecs;
     @Nullable
     private HavingSpec havingSpec;
-
+    @Nullable
     private Map<String, Object> context;
 
     @Nullable
@@ -1133,6 +1135,17 @@ public class GroupByQuery extends BaseQuery<ResultRow>
     public Builder setContext(Map<String, Object> context)
     {
       this.context = context;
+      return this;
+    }
+
+    public Builder randomQueryId()
+    {
+      return queryId(UUID.randomUUID().toString());
+    }
+
+    public Builder queryId(String queryId)
+    {
+      context = BaseQuery.computeOverriddenContext(context, ImmutableMap.of(BaseQuery.QUERY_ID, queryId));
       return this;
     }
 
