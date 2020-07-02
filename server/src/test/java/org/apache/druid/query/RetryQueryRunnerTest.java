@@ -35,7 +35,7 @@ import org.apache.druid.client.cache.MapCache;
 import org.apache.druid.guice.http.DruidHttpClientConfig;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.DateTimes;
-import org.apache.druid.java.util.common.NonnullPair;
+import org.apache.druid.java.util.common.Pair;
 import org.apache.druid.java.util.common.granularity.Granularities;
 import org.apache.druid.java.util.common.guava.Sequence;
 import org.apache.druid.java.util.common.io.Closer;
@@ -243,7 +243,7 @@ public class RetryQueryRunnerTest
    * Drops a segment from the DruidServer. This method doesn't update the server view, but the server will stop
    * serving queries for the dropped segment.
    */
-  private NonnullPair<DataSegment, QueryableIndex> dropSegmentFromServer(DruidServer fromServer)
+  private Pair<DataSegment, QueryableIndex> dropSegmentFromServer(DruidServer fromServer)
   {
     final SimpleServerManager serverManager = httpClient.getServerManager(fromServer);
     Assert.assertNotNull(serverManager);
@@ -253,9 +253,9 @@ public class RetryQueryRunnerTest
   /**
    * Drops a segment from the DruidServer and update the server view.
    */
-  private NonnullPair<DataSegment, QueryableIndex> unannounceSegmentFromServer(DruidServer fromServer)
+  private Pair<DataSegment, QueryableIndex> unannounceSegmentFromServer(DruidServer fromServer)
   {
-    final NonnullPair<DataSegment, QueryableIndex> pair = dropSegmentFromServer(fromServer);
+    final Pair<DataSegment, QueryableIndex> pair = dropSegmentFromServer(fromServer);
     simpleServerView.unannounceSegmentFromServer(fromServer, pair.lhs);
     return pair;
   }
@@ -266,7 +266,7 @@ public class RetryQueryRunnerTest
    */
   private void dropSegmentFromServerAndAddNewServerForSegment(DruidServer fromServer)
   {
-    final NonnullPair<DataSegment, QueryableIndex> pair = unannounceSegmentFromServer(fromServer);
+    final Pair<DataSegment, QueryableIndex> pair = unannounceSegmentFromServer(fromServer);
     final DataSegment segmentToMove = pair.lhs;
     final QueryableIndex queryableIndexToMove = pair.rhs;
     addServer(

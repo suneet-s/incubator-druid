@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.Intervals;
-import org.apache.druid.java.util.common.NonnullPair;
+import org.apache.druid.java.util.common.Pair;
 import org.apache.druid.query.SegmentDescriptor;
 import org.apache.druid.query.context.ResponseContext.Key;
 import org.joda.time.Interval;
@@ -139,10 +139,10 @@ public class ResponseContextTest
     final String queryId = "queryId";
     final String queryId2 = "queryId2";
     ctx.put(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new ConcurrentHashMap<>());
-    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new NonnullPair<>(queryId, 3));
-    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new NonnullPair<>(queryId2, 4));
-    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new NonnullPair<>(queryId, -1));
-    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new NonnullPair<>(queryId, -2));
+    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new Pair<>(queryId, 3));
+    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new Pair<>(queryId2, 4));
+    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new Pair<>(queryId, -1));
+    ctx.add(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new Pair<>(queryId, -2));
     Assert.assertEquals(
         ImmutableMap.of(queryId, 0, queryId2, 4),
         ctx.get(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS)

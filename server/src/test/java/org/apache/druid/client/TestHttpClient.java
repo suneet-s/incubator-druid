@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.druid.java.util.common.ISE;
-import org.apache.druid.java.util.common.NonnullPair;
+import org.apache.druid.java.util.common.Pair;
 import org.apache.druid.java.util.common.StringUtils;
 import org.apache.druid.java.util.common.guava.Sequence;
 import org.apache.druid.java.util.http.client.HttpClient;
@@ -179,10 +179,10 @@ public class TestHttpClient implements HttpClient
       }
     }
 
-    public NonnullPair<DataSegment, QueryableIndex> dropSegment()
+    public Pair<DataSegment, QueryableIndex> dropSegment()
     {
       this.isSegmentDropped = true;
-      return new NonnullPair<>(segment, queryableIndex);
+      return Pair.of(segment, queryableIndex);
     }
   }
 }

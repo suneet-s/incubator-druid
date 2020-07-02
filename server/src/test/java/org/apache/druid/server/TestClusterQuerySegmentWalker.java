@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.druid.client.SegmentServerSelector;
 import org.apache.druid.java.util.common.ISE;
-import org.apache.druid.java.util.common.NonnullPair;
+import org.apache.druid.java.util.common.Pair;
 import org.apache.druid.java.util.common.concurrent.Execs;
 import org.apache.druid.java.util.common.guava.FunctionalIterable;
 import org.apache.druid.java.util.common.guava.LazySequence;
@@ -175,7 +175,7 @@ public class TestClusterQuerySegmentWalker implements QuerySegmentWalker
       responseContext.put(Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS, new ConcurrentHashMap<>());
       responseContext.add(
           Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS,
-          new NonnullPair<>(theQuery.getQuery().getMostSpecificId(), 0)
+          new Pair<>(theQuery.getQuery().getMostSpecificId(), 0)
       );
       if (scheduler != null) {
         Set<SegmentServerSelector> segments = new HashSet<>();
