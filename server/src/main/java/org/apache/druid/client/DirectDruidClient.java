@@ -27,7 +27,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.druid.java.util.common.NonnullPair;
+import org.apache.druid.java.util.common.Pair;
 import org.apache.druid.java.util.common.RE;
 import org.apache.druid.java.util.common.StringUtils;
 import org.apache.druid.java.util.common.concurrent.Execs;
@@ -246,7 +246,7 @@ public class DirectDruidClient<T> implements QueryRunner<T>
             final String responseContext = response.headers().get(QueryResource.HEADER_RESPONSE_CONTEXT);
             context.add(
                 ResponseContext.Key.REMAINING_RESPONSES_FROM_QUERY_SERVERS,
-                new NonnullPair<>(query.getMostSpecificId(), VAL_TO_REDUCE_REMAINING_RESPONSES)
+                new Pair<>(query.getMostSpecificId(), VAL_TO_REDUCE_REMAINING_RESPONSES)
             );
             // context may be null in case of error or query timeout
             if (responseContext != null) {

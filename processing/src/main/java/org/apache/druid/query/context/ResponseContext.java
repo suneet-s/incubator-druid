@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.druid.guice.annotations.PublicApi;
-import org.apache.druid.java.util.common.NonnullPair;
+import org.apache.druid.java.util.common.Pair;
 import org.apache.druid.java.util.common.jackson.JacksonUtils;
 import org.apache.druid.query.SegmentDescriptor;
 import org.joda.time.Interval;
@@ -131,7 +131,7 @@ public abstract class ResponseContext
         "remainingResponsesFromQueryServers",
             (totalRemainingPerId, idAndNumResponses) -> {
               final ConcurrentHashMap<String, Integer> map = (ConcurrentHashMap<String, Integer>) totalRemainingPerId;
-              final NonnullPair<String, Integer> pair = (NonnullPair<String, Integer>) idAndNumResponses;
+              final Pair<String, Integer> pair = (Pair<String, Integer>) idAndNumResponses;
               map.compute(
                   pair.lhs,
                   (id, remaining) -> remaining == null ? pair.rhs : remaining + pair.rhs
