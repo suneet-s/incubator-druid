@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import org.apache.druid.client.CachingClusteredClient;
+import org.apache.druid.client.DirectDruidClient;
 import org.apache.druid.client.cache.Cache;
 import org.apache.druid.client.cache.CacheConfig;
 import org.apache.druid.java.util.common.ISE;
@@ -58,7 +59,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -293,7 +293,7 @@ public class ClientQuerySegmentWalker implements QuerySegmentWalker
         }
       } else if (canRunQueryUsingLocalWalker(subQuery) || canRunQueryUsingClusterWalker(subQuery)) {
         // Subquery needs to be inlined. Assign it a subquery id and run it.
-        final Query subQueryWithId = subQuery.withSubQueryId(UUID.randomUUID().toString());
+        final Query subQueryWithId = subQuery.withDefaultSubQueryId();
 
         final Sequence<?> queryResults;
 
@@ -301,7 +301,10 @@ public class ClientQuerySegmentWalker implements QuerySegmentWalker
           queryResults = Sequences.empty();
         } else {
           final QueryRunner subqueryRunner = subQueryWithId.getRunner(this);
-          queryResults = subqueryRunner.run(QueryPlus.wrap(subQueryWithId));
+          queryResults = subqueryRunner.run(
+              QueryPlus.wrap(subQueryWithId),
+              DirectDruidClient.makeResponseContextForQuery()
+          );
         }
 
         return toInlineDataSource(
@@ -360,6 +363,7 @@ public class ClientQuerySegmentWalker implements QuerySegmentWalker
                 serverConfig,
                 new RetryQueryRunner<>(
                     baseClusterRunner,
+                    clusterClient::getQueryRunnerForSegments,
                     retryConfig,
                     objectMapper
                 )

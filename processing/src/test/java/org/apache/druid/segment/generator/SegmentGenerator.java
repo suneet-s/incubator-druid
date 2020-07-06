@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.druid.benchmark.datagen;
+package org.apache.druid.segment.generator;
 
 import com.google.common.hash.Hashing;
 import org.apache.druid.common.config.NullHandling;
@@ -100,7 +100,7 @@ public class SegmentGenerator implements Closeable
 
   public QueryableIndex generate(
       final DataSegment dataSegment,
-      final BenchmarkSchemaInfo schemaInfo,
+      final GeneratorSchemaInfo schemaInfo,
       final Granularity granularity,
       final int numRows
   )
@@ -131,7 +131,7 @@ public class SegmentGenerator implements Closeable
 
     log.info("Writing segment with hash[%s] to directory[%s].", dataHash, outDir);
 
-    final BenchmarkDataGenerator dataGenerator = new BenchmarkDataGenerator(
+    final DataGenerator dataGenerator = new DataGenerator(
         schemaInfo.getColumnSchemas(),
         dataSegment.getId().hashCode(), /* Use segment identifier hashCode as seed */
         schemaInfo.getDataInterval(),
