@@ -21,6 +21,7 @@ package org.apache.druid.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import org.apache.druid.client.selector.HighestPriorityTierSelectorStrategy;
 import org.apache.druid.client.selector.QueryableDruidServer;
@@ -29,21 +30,21 @@ import org.apache.druid.client.selector.ServerSelector;
 import org.apache.druid.client.selector.TierSelectorStrategy;
 import org.apache.druid.java.util.common.ISE;
 import org.apache.druid.java.util.http.client.HttpClient;
+import org.apache.druid.query.DataSource;
 import org.apache.druid.query.QueryRunner;
 import org.apache.druid.query.QueryToolChestWarehouse;
 import org.apache.druid.query.QueryWatcher;
-import org.apache.druid.query.planning.DataSourceAnalysis;
 import org.apache.druid.server.coordination.ServerType;
 import org.apache.druid.server.metrics.NoopServiceEmitter;
 import org.apache.druid.timeline.DataSegment;
 import org.apache.druid.timeline.TimelineLookup;
 import org.apache.druid.timeline.VersionedIntervalTimeline;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Executor;
 
 /**
@@ -133,10 +134,11 @@ public class SimpleServerView implements TimelineServerView
              .add(segment.getInterval(), segment.getVersion(), segment.getShardSpec().createChunk(selector));
   }
 
+  @Nullable
   @Override
-  public Optional<? extends TimelineLookup<String, ServerSelector>> getTimeline(DataSourceAnalysis analysis)
+  public TimelineLookup<String, ServerSelector> getTimeline(DataSource dataSource)
   {
-    return Optional.ofNullable(timelines.get(analysis.getBaseTableDataSource().get().getName()));
+    return timelines.get(Iterables.getOnlyElement(dataSource.getNames()));
   }
 
   @Override

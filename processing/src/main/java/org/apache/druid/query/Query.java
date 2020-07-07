@@ -44,6 +44,7 @@ import org.joda.time.Interval;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 @ExtensionPoint
@@ -123,6 +124,23 @@ public interface Query<T>
 
   String getId();
 
+  /**
+   * Returns a copy of this query with a new subQueryId (see {@link #getSubQueryId()}.
+   */
+  Query<T> withSubQueryId(String subQueryId);
+
+  default Query<T> withDefaultSubQueryId()
+  {
+    return withSubQueryId(UUID.randomUUID().toString());
+  }
+
+  /**
+   * Returns the subQueryId of this query. This is set by ClientQuerySegmentWalker (the entry point for the Broker's
+   * query stack) on any subqueries that it issues. It is null for the main query.
+   */
+  @Nullable
+  String getSubQueryId();
+
   default Query<T> withSqlQueryId(String sqlQueryId)
   {
     return this;
@@ -135,13 +153,14 @@ public interface Query<T>
   }
 
   /**
-   * Returns a most specific ID of this query;
+   * Returns a most specific ID of this query; if it is a subquery, this will return its subquery ID.
    * If it is a regular query without subqueries, this will return its query ID.
-   * This method should be called after the relevant ID is assigned using {@link #withId}.
+   * This method should be called after the relevant ID is assigned using {@link #withId} or {@link #withSubQueryId}.
    */
   default String getMostSpecificId()
   {
-    return Preconditions.checkNotNull(getId(), "queryId");
+    final String subqueryId = getSubQueryId();
+    return subqueryId == null ? Preconditions.checkNotNull(getId(), "queryId") : subqueryId;
   }
 
   Query<T> withDataSource(DataSource dataSource);

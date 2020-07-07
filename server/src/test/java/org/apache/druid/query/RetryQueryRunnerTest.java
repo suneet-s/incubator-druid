@@ -32,6 +32,7 @@ import org.apache.druid.client.cache.CacheConfig;
 import org.apache.druid.client.cache.CachePopulatorStats;
 import org.apache.druid.client.cache.ForegroundCachePopulator;
 import org.apache.druid.client.cache.MapCache;
+import org.apache.druid.collections.CloseableStupidPool;
 import org.apache.druid.guice.http.DruidHttpClientConfig;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.DateTimes;
@@ -43,13 +44,34 @@ import org.apache.druid.query.aggregation.CountAggregatorFactory;
 import org.apache.druid.query.context.ConcurrentResponseContext;
 import org.apache.druid.query.context.ResponseContext;
 import org.apache.druid.query.context.ResponseContext.Key;
+import org.apache.druid.query.groupby.GroupByQuery;
+import org.apache.druid.query.groupby.GroupByQueryConfig;
+import org.apache.druid.query.groupby.GroupByQueryRunnerFactory;
+import org.apache.druid.query.groupby.GroupByQueryRunnerTest;
+import org.apache.druid.query.groupby.strategy.GroupByStrategySelector;
+import org.apache.druid.query.metadata.SegmentMetadataQueryConfig;
+import org.apache.druid.query.metadata.SegmentMetadataQueryQueryToolChest;
+import org.apache.druid.query.metadata.SegmentMetadataQueryRunnerFactory;
+import org.apache.druid.query.metadata.metadata.SegmentMetadataQuery;
+import org.apache.druid.query.scan.ScanQuery;
+import org.apache.druid.query.scan.ScanQueryConfig;
+import org.apache.druid.query.scan.ScanQueryEngine;
+import org.apache.druid.query.scan.ScanQueryQueryToolChest;
+import org.apache.druid.query.scan.ScanQueryRunnerFactory;
+import org.apache.druid.query.timeseries.TimeseriesQuery;
+import org.apache.druid.query.timeseries.TimeseriesQueryEngine;
+import org.apache.druid.query.timeseries.TimeseriesQueryQueryToolChest;
+import org.apache.druid.query.timeseries.TimeseriesQueryRunnerFactory;
 import org.apache.druid.query.timeseries.TimeseriesResultValue;
+import org.apache.druid.query.topn.TopNQuery;
+import org.apache.druid.query.topn.TopNQueryConfig;
+import org.apache.druid.query.topn.TopNQueryQueryToolChest;
+import org.apache.druid.query.topn.TopNQueryRunnerFactory;
 import org.apache.druid.segment.QueryableIndex;
 import org.apache.druid.segment.SegmentMissingException;
 import org.apache.druid.segment.generator.GeneratorBasicSchemas;
 import org.apache.druid.segment.generator.GeneratorSchemaInfo;
 import org.apache.druid.segment.generator.SegmentGenerator;
-import org.apache.druid.server.QueryStackTests;
 import org.apache.druid.timeline.DataSegment;
 import org.apache.druid.timeline.partition.NumberedShardSpec;
 import org.joda.time.Interval;
@@ -62,6 +84,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -75,7 +98,41 @@ public class RetryQueryRunnerTest
   private static final Closer CLOSER = Closer.create();
   private static final String DATASOURCE = "datasource";
   private static final GeneratorSchemaInfo SCHEMA_INFO = GeneratorBasicSchemas.SCHEMA_MAP.get("basic");
-  private static final boolean USE_PARALLEL_MERGE_POOL_CONFIGURED = false;
+  private static final DruidProcessingConfig PROCESSING_CONFIG = new DruidProcessingConfig()
+  {
+    @Override
+    public String getFormatString()
+    {
+      return null;
+    }
+
+    @Override
+    public int intermediateComputeSizeBytes()
+    {
+      return 10 * 1024 * 1024;
+    }
+
+    @Override
+    public int getNumThreads()
+    {
+      // Only use 1 thread for tests.
+      return 1;
+    }
+
+    @Override
+    public int getNumMergeBuffers()
+    {
+      // Need 3 buffers for CalciteQueryTest.testDoubleNestedGroupby.
+      // Two buffers for the broker and one for the queryable
+      return 3;
+    }
+
+    @Override
+    public boolean useParallelMergePoolConfigured()
+    {
+      return false;
+    }
+  };
 
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
@@ -92,7 +149,7 @@ public class RetryQueryRunnerTest
 
   public RetryQueryRunnerTest()
   {
-    conglomerate = QueryStackTests.createQueryRunnerFactoryConglomerate(CLOSER, USE_PARALLEL_MERGE_POOL_CONFIGURED);
+    conglomerate = createQueryRunnerFactoryConglomerate();
 
     toolChestWarehouse = new QueryToolChestWarehouse()
     {
@@ -110,6 +167,75 @@ public class RetryQueryRunnerTest
     CLOSER.close();
   }
 
+  public static QueryRunnerFactoryConglomerate createQueryRunnerFactoryConglomerate()
+  {
+    final CloseableStupidPool<ByteBuffer> stupidPool = new CloseableStupidPool<>(
+        "TopNQueryRunnerFactory-bufferPool",
+        () -> ByteBuffer.allocate(10 * 1024 * 1024)
+    );
+    CLOSER.register(stupidPool);
+    final Pair<GroupByQueryRunnerFactory, Closer> factoryCloserPair = GroupByQueryRunnerTest
+        .makeQueryRunnerFactory(
+            GroupByQueryRunnerTest.DEFAULT_MAPPER,
+            new GroupByQueryConfig()
+            {
+              @Override
+              public String getDefaultStrategy()
+              {
+                return GroupByStrategySelector.STRATEGY_V2;
+              }
+            },
+            PROCESSING_CONFIG
+        );
+    final GroupByQueryRunnerFactory factory = factoryCloserPair.lhs;
+    CLOSER.register(factoryCloserPair.rhs);
+
+    return new DefaultQueryRunnerFactoryConglomerate(
+        ImmutableMap.<Class<? extends Query>, QueryRunnerFactory>builder()
+            .put(
+                SegmentMetadataQuery.class,
+                new SegmentMetadataQueryRunnerFactory(
+                    new SegmentMetadataQueryQueryToolChest(
+                        new SegmentMetadataQueryConfig("P1W")
+                    ),
+                    QueryRunnerTestHelper.NOOP_QUERYWATCHER
+                )
+            )
+            .put(
+                ScanQuery.class,
+                new ScanQueryRunnerFactory(
+                    new ScanQueryQueryToolChest(
+                        new ScanQueryConfig(),
+                        new DefaultGenericQueryMetricsFactory()
+                    ),
+                    new ScanQueryEngine(),
+                    new ScanQueryConfig()
+                )
+            )
+            .put(
+                TimeseriesQuery.class,
+                new TimeseriesQueryRunnerFactory(
+                    new TimeseriesQueryQueryToolChest(QueryRunnerTestHelper.noopIntervalChunkingQueryRunnerDecorator()),
+                    new TimeseriesQueryEngine(),
+                    QueryRunnerTestHelper.NOOP_QUERYWATCHER
+                )
+            )
+            .put(
+                TopNQuery.class,
+                new TopNQueryRunnerFactory(
+                    stupidPool,
+                    new TopNQueryQueryToolChest(
+                        new TopNQueryConfig(),
+                        QueryRunnerTestHelper.noopIntervalChunkingQueryRunnerDecorator()
+                    ),
+                    QueryRunnerTestHelper.NOOP_QUERYWATCHER
+                )
+            )
+            .put(GroupByQuery.class, factory)
+            .build()
+    );
+  }
+
   @Before
   public void setup()
   {
@@ -124,9 +250,8 @@ public class RetryQueryRunnerTest
         new ForegroundCachePopulator(objectMapper, new CachePopulatorStats(), 0),
         new CacheConfig(),
         new DruidHttpClientConfig(),
-        QueryStackTests.getProcessingConfig(USE_PARALLEL_MERGE_POOL_CONFIGURED),
-        ForkJoinPool.commonPool(),
-        QueryStackTests.DEFAULT_NOOP_SCHEDULER
+        PROCESSING_CONFIG,
+        ForkJoinPool.commonPool()
     );
     servers = new ArrayList<>();
   }

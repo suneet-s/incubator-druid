@@ -755,7 +755,6 @@ public class DruidCoordinator
                              .withDatabaseRuleManager(metadataRuleManager)
                              .withLoadManagementPeons(loadManagementPeons)
                              .withSegmentReplicantLookup(segmentReplicantLookup)
-                             .withBalancerReferenceTimestamp(DateTimes.nowUtc())
                              .build();
               },
               new DruidCoordinatorRuleRunner(DruidCoordinator.this),
