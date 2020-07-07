@@ -407,7 +407,11 @@ public class GroupByQueryRunnerTest extends InitializedNullHandlingTest
         QueryRunnerTestHelper.sameThreadIntervalChunkingQueryRunnerDecorator()
     );
     final Closer closer = Closer.create();
-    closer.register(bufferPool);
+    closer.register(() -> {
+      // Verify that all objects have been returned to the pool.
+      Assert.assertEquals(bufferPool.poolSize(), bufferPool.objectsCreatedCount());
+      bufferPool.close();
+    });
     closer.register(mergeBufferPool);
     return Pair.of(new GroupByQueryRunnerFactory(strategySelector, toolChest), closer);
   }
