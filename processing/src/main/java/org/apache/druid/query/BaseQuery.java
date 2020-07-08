@@ -53,6 +53,7 @@ public abstract class BaseQuery<T> implements Query<T>
   }
 
   public static final String QUERY_ID = "queryId";
+  public static final String SUB_QUERY_ID = "subQueryId";
   public static final String SQL_QUERY_ID = "sqlQueryId";
   private final DataSource dataSource;
   private final boolean descending;
@@ -203,7 +204,7 @@ public abstract class BaseQuery<T> implements Query<T>
     return computeOverriddenContext(getContext(), overrides);
   }
 
-  protected static Map<String, Object> computeOverriddenContext(
+  public static Map<String, Object> computeOverriddenContext(
       final Map<String, Object> context,
       final Map<String, Object> overrides
   )
@@ -237,7 +238,20 @@ public abstract class BaseQuery<T> implements Query<T>
   }
 
   @Override
-  public Query withId(String id)
+  public Query<T> withSubQueryId(String subQueryId)
+  {
+    return withOverriddenContext(ImmutableMap.of(SUB_QUERY_ID, subQueryId));
+  }
+
+  @Nullable
+  @Override
+  public String getSubQueryId()
+  {
+    return (String) getContextValue(SUB_QUERY_ID);
+  }
+
+  @Override
+  public Query<T> withId(String id)
   {
     return withOverriddenContext(ImmutableMap.of(QUERY_ID, id));
   }

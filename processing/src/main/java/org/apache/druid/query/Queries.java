@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import org.apache.druid.guice.annotations.PublicApi;
 import org.apache.druid.query.aggregation.AggregatorFactory;
 import org.apache.druid.query.aggregation.PostAggregator;
+import org.apache.druid.query.spec.MultipleSpecificSegmentSpec;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -129,5 +130,29 @@ public class Queries
     }
 
     return postAggs;
+  }
+
+  /**
+   * Rewrite "query" to refer to some specific segment descriptors.
+   *
+   * The dataSource for "query" must be based on a single table for this operation to be valid. Otherwise, this
+   * function will throw an exception.
+   *
+   * Unlike the seemingly-similar {@code query.withQuerySegmentSpec(new MultipleSpecificSegmentSpec(descriptors))},
+   * this this method will walk down subqueries found within the query datasource, if any, and modify the lowest-level
+   * subquery.
+   */
+  public static <T> Query<T> withSpecificSegments(final Query<T> query, final List<SegmentDescriptor> descriptors)
+  {
+    final Query<T> retVal;
+
+    if (query.getDataSource() instanceof QueryDataSource) {
+      final Query<?> subQuery = ((QueryDataSource) query.getDataSource()).getQuery();
+      retVal = query.withDataSource(new QueryDataSource(withSpecificSegments(subQuery, descriptors)));
+    } else {
+      retVal = query.withQuerySegmentSpec(new MultipleSpecificSegmentSpec(descriptors));
+    }
+
+    return retVal;
   }
 }

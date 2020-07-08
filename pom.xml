@@ -1248,6 +1248,9 @@
                         <exclude>org/apache/druid/**/*Benchmark*</exclude>  <!-- benchmarks -->
                         <exclude>org/testng/DruidTestRunnerFactory*</exclude>  <!-- benchmarks -->
                         <exclude>org/apache/druid/testing/**/*</exclude>  <!-- integration-tests -->
+
+                        <!-- Exceptions -->
+                        <exclude>org/apache/druid/query/TruncatedResponseContextException.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>
