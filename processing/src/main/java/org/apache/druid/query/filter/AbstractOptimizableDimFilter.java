@@ -17,28 +17,26 @@
  * under the License.
  */
 
-package org.apache.druid.segment;
+package org.apache.druid.query.filter;
 
-import java.io.Closeable;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 
 /**
- * An interface to reference-counted objects. Used by {@link ReferenceCountingSegment}. Thread-safe.
+ * Base class for DimFilters that support optimization. This abstract class provides a default implementation of
+ * toOptimizedFilter that relies on the existing optimize() and toFilter() methods. It uses a memoized supplier.
  */
-public interface ReferenceCounter
+public abstract class AbstractOptimizableDimFilter implements DimFilter
 {
-  /**
-   * Increment the reference count by one.
-   */
-  boolean increment();
+  private final Supplier<Filter> cachedOptimizedFilter = Suppliers.memoize(
+      () -> optimize().toFilter()
+  );
 
-  /**
-   * Returns a {@link Closeable} which action is to call {@link #decrement()} only once. If close() is called on the
-   * returned Closeable object for the second time, it won't call {@link #decrement()} again.
-   */
-  Closeable decrementOnceCloseable();
-
-  /**
-   * Decrement the reference count by one.
-   */
-  void decrement();
+  @JsonIgnore
+  @Override
+  public Filter toOptimizedFilter()
+  {
+    return cachedOptimizedFilter.get();
+  }
 }

@@ -31,15 +31,16 @@ import org.apache.druid.annotations.UsedByJUnitParamsRunner;
 import org.apache.druid.common.config.NullHandling;
 import org.apache.druid.java.util.common.DateTimes;
 import org.apache.druid.java.util.common.IAE;
-import org.apache.druid.java.util.common.ISE;
 import org.apache.druid.java.util.common.Intervals;
 import org.apache.druid.java.util.common.JodaUtils;
 import org.apache.druid.java.util.common.StringUtils;
 import org.apache.druid.java.util.common.granularity.Granularities;
 import org.apache.druid.java.util.common.granularity.PeriodGranularity;
+import org.apache.druid.java.util.common.guava.Sequence;
 import org.apache.druid.math.expr.ExprMacroTable;
 import org.apache.druid.query.Druids;
 import org.apache.druid.query.LookupDataSource;
+import org.apache.druid.query.Query;
 import org.apache.druid.query.QueryContexts;
 import org.apache.druid.query.QueryDataSource;
 import org.apache.druid.query.QueryException;
@@ -84,6 +85,7 @@ import org.apache.druid.query.filter.LikeDimFilter;
 import org.apache.druid.query.filter.NotDimFilter;
 import org.apache.druid.query.filter.SelectorDimFilter;
 import org.apache.druid.query.groupby.GroupByQuery;
+import org.apache.druid.query.groupby.ResultRow;
 import org.apache.druid.query.groupby.orderby.DefaultLimitSpec;
 import org.apache.druid.query.groupby.orderby.OrderByColumnSpec;
 import org.apache.druid.query.groupby.orderby.OrderByColumnSpec.Direction;
@@ -96,6 +98,8 @@ import org.apache.druid.query.topn.NumericTopNMetricSpec;
 import org.apache.druid.query.topn.TopNQueryBuilder;
 import org.apache.druid.segment.column.ValueType;
 import org.apache.druid.segment.join.JoinType;
+import org.apache.druid.server.QueryLifecycle;
+import org.apache.druid.server.QueryLifecycleFactory;
 import org.apache.druid.sql.calcite.expression.DruidExpression;
 import org.apache.druid.sql.calcite.filtration.Filtration;
 import org.apache.druid.sql.calcite.planner.Calcites;
@@ -11844,79 +11848,152 @@ public class CalciteQueryTest extends BaseCalciteQueryTest
   @Parameters(source = QueryContextForJoinProvider.class)
   public void testNestedGroupByOnInlineDataSourceWithFilterIsNotSupported(Map<String, Object> queryContext) throws Exception
   {
-    try {
-      testQuery(
-          "with abc as"
-          + "("
-          + "  SELECT dim1, m2 from druid.foo where \"__time\" >= '2001-01-02'"
-          + ")"
-          + ", def as"
-          + "("
-          + "  SELECT t1.dim1, SUM(t2.m2) as \"metricSum\" "
-          + "  from abc as t1 inner join abc as t2 on t1.dim1 = t2.dim1"
-          + "  where t1.dim1='def'"
-          + "  group by 1"
-          + ")"
-          + "SELECT count(*) from def",
-          queryContext,
-          ImmutableList.of(
-              GroupByQuery
-                  .builder()
-                  .setDataSource(
-                      GroupByQuery
-                          .builder()
-                          .setDataSource(
-                              join(
-                                  new QueryDataSource(
-                                      newScanQueryBuilder()
-                                          .dataSource(CalciteTests.DATASOURCE1)
-                                          .intervals(querySegmentSpec(Intervals.of("2001-01-02T00:00:00.000Z/146140482-04-24T15:36:27.903Z")))
-                                          .columns("dim1", "m2")
-                                          .resultFormat(ScanQuery.ResultFormat.RESULT_FORMAT_COMPACTED_LIST)
-                                          .context(queryContext)
-                                          .build()
-                                  ),
-                                  new QueryDataSource(
-                                      newScanQueryBuilder()
-                                          .dataSource(CalciteTests.DATASOURCE1)
-                                          .intervals(querySegmentSpec(Intervals.of("2001-01-02T00:00:00.000Z/146140482-04-24T15:36:27.903Z")))
-                                          .columns("dim1", "m2")
-                                          .resultFormat(ScanQuery.ResultFormat.RESULT_FORMAT_COMPACTED_LIST)
-                                          .context(queryContext)
-                                          .build()
-                                  ),
-                                  "j0",
-                                  equalsCondition(
-                                      DruidExpression.fromColumn("dim1"),
-                                      DruidExpression.fromColumn("j0.dim1")
-                                  ),
-                                  JoinType.INNER
-                              )
-                          )
-                          .setGranularity(Granularities.ALL)
-                          .setInterval(querySegmentSpec(Filtration.eternity()))
-                          .build()
-                  )
-                  .setGranularity(Granularities.ALL)
-                  .setInterval(querySegmentSpec(Filtration.eternity()))
-                  .build()
-          ),
-          ImmutableList.of(new Object[] {1})
-      );
-      Assert.fail("Expected an ISE to be thrown");
-    }
-    catch (RuntimeException e) {
-      Throwable cause = e.getCause();
-      boolean foundISE = false;
-      while (cause != null) {
-        if (cause instanceof ISE) {
-          foundISE = true;
-          break;
-        }
-        cause = cause.getCause();
-      }
-      Assert.assertTrue(foundISE);
-    }
+    // Cannot vectorize due to virtual columns.
+    cannotVectorize();
+
+    testQuery(
+        "with abc as"
+        + "("
+        + "  SELECT dim1, m2 from druid.foo where \"__time\" >= '2001-01-02'"
+        + ")"
+        + ", def as"
+        + "("
+        + "  SELECT t1.dim1, SUM(t2.m2) as \"metricSum\" "
+        + "  from abc as t1 inner join abc as t2 on t1.dim1 = t2.dim1"
+        + "  where t1.dim1='def'"
+        + "  group by 1"
+        + ")"
+        + "SELECT count(*) from def",
+        queryContext,
+        ImmutableList.of(
+            GroupByQuery
+                .builder()
+                .setDataSource(
+                    GroupByQuery
+                        .builder()
+                        .setDataSource(
+                            join(
+                                new QueryDataSource(
+                                    newScanQueryBuilder()
+                                        .dataSource(CalciteTests.DATASOURCE1)
+                                        .intervals(querySegmentSpec(Intervals.of("2001-01-02T00:00:00.000Z/146140482-04-24T15:36:27.903Z")))
+                                        .columns("dim1")
+                                        .resultFormat(ScanQuery.ResultFormat.RESULT_FORMAT_COMPACTED_LIST)
+                                        .context(queryContext)
+                                        .build()
+                                ),
+                                new QueryDataSource(
+                                    newScanQueryBuilder()
+                                        .dataSource(CalciteTests.DATASOURCE1)
+                                        .intervals(querySegmentSpec(Intervals.of("2001-01-02T00:00:00.000Z/146140482-04-24T15:36:27.903Z")))
+                                        .columns("dim1", "m2")
+                                        .resultFormat(ScanQuery.ResultFormat.RESULT_FORMAT_COMPACTED_LIST)
+                                        .context(queryContext)
+                                        .build()
+                                ),
+                                "j0.",
+                                equalsCondition(
+                                    DruidExpression.fromColumn("dim1"),
+                                    DruidExpression.fromColumn("j0.dim1")
+                                ),
+                                JoinType.INNER
+                            )
+                        )
+                        .setGranularity(Granularities.ALL)
+                        .setInterval(querySegmentSpec(Filtration.eternity()))
+                        .setDimFilter(selector("dim1", "def", null))
+                        .setDimensions(
+                            dimensions(
+                                new DefaultDimensionSpec("v0", "d0")
+                            )
+                        )
+                        .setVirtualColumns(expressionVirtualColumn("v0", "'def'", ValueType.STRING))
+                        .build()
+                )
+                .setAggregatorSpecs(aggregators(new CountAggregatorFactory("a0")))
+                .setGranularity(Granularities.ALL)
+                .setInterval(querySegmentSpec(Filtration.eternity()))
+                .build()
+        ),
+        ImmutableList.of(new Object[] {1L})
+    );
+  }
+
+  @Test
+  @Parameters(source = QueryContextForJoinProvider.class)
+  public void testGroupByJoinAsNativeQueryWithUnoptimizedFilter(Map<String, Object> queryContext)
+  {
+    // The query below is the same as the inner groupBy on a join datasource from the test
+    // testNestedGroupByOnInlineDataSourceWithFilter, except that the selector filter
+    // dim1=def has been rewritten into an unoptimized filter, dim1 IN (def).
+    //
+    // The unoptimized filter will be optimized into dim1=def by the query toolchests in their
+    // pre-merge decoration function, when it calls DimFilter.optimize().
+    //
+    // This test's goal is to ensure that the join filter rewrites function correctly when there are
+    // unoptimized filters in the join query. The rewrite logic must apply to the optimized form of the filters,
+    // as this is what will be passed to HashJoinSegmentAdapter.makeCursors(), where the result of the join
+    // filter pre-analysis is used.
+    //
+    // A native query is used because the filter types where we support optimization are the AND/OR/NOT and
+    // IN filters. However, when expressed in a SQL query, our SQL planning layer is smart enough to already apply
+    // these optimizations in the native query it generates, making it impossible to test the unoptimized filter forms
+    // using SQL queries.
+    //
+    // The test method is placed here for convenience as this class provides the necessary setup.
+    Query query = GroupByQuery
+        .builder()
+        .setDataSource(
+            join(
+                new QueryDataSource(
+                    newScanQueryBuilder()
+                        .dataSource(CalciteTests.DATASOURCE1)
+                        .intervals(querySegmentSpec(Intervals.of("2001-01-02T00:00:00.000Z/146140482-04-24T15:36:27.903Z")))
+                        .columns("dim1")
+                        .resultFormat(ScanQuery.ResultFormat.RESULT_FORMAT_COMPACTED_LIST)
+                        .context(queryContext)
+                        .build()
+                ),
+                new QueryDataSource(
+                    newScanQueryBuilder()
+                        .dataSource(CalciteTests.DATASOURCE1)
+                        .intervals(querySegmentSpec(Intervals.of("2001-01-02T00:00:00.000Z/146140482-04-24T15:36:27.903Z")))
+                        .columns("dim1", "m2")
+                        .resultFormat(ScanQuery.ResultFormat.RESULT_FORMAT_COMPACTED_LIST)
+                        .context(queryContext)
+                        .build()
+                ),
+                "j0.",
+                equalsCondition(
+                    DruidExpression.fromColumn("dim1"),
+                    DruidExpression.fromColumn("j0.dim1")
+                ),
+                JoinType.INNER
+            )
+        )
+        .setGranularity(Granularities.ALL)
+        .setInterval(querySegmentSpec(Filtration.eternity()))
+        .setDimFilter(in("dim1", Collections.singletonList("def"), null))  // provide an unoptimized IN filter
+        .setDimensions(
+            dimensions(
+                new DefaultDimensionSpec("v0", "d0")
+            )
+        )
+        .setVirtualColumns(expressionVirtualColumn("v0", "'def'", ValueType.STRING))
+        .build();
+
+    QueryLifecycleFactory qlf = CalciteTests.createMockQueryLifecycleFactory(walker, conglomerate);
+    QueryLifecycle ql = qlf.factorize();
+    Sequence seq = ql.runSimple(
+        query,
+        CalciteTests.SUPER_USER_AUTH_RESULT,
+        null
+    );
+    List<Object> results = seq.toList();
+    Assert.assertEquals(
+        ImmutableList.of(ResultRow.of("def")),
+        results
+    );
   }
 
   @Test
