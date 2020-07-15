@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.druid.indexer;
+package org.apache.druid.common.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TaskIdUtils
+public class IdUtils
 {
   private static final Pattern INVALIDCHARS = Pattern.compile("(?s).*[^\\S ].*");
 
