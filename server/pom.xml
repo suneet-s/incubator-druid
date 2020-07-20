@@ -416,6 +416,12 @@
             <artifactId>httpcore</artifactId>
             <scope>test</scope>
         </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-text</artifactId>
+        <version>1.3</version>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
 
     <build>

@@ -35,6 +35,7 @@ import org.apache.druid.security.basic.authentication.endpoint.CoordinatorBasicA
 import org.apache.druid.security.basic.authentication.entity.BasicAuthenticatorCredentialUpdate;
 import org.apache.druid.security.basic.authentication.entity.BasicAuthenticatorCredentials;
 import org.apache.druid.security.basic.authentication.entity.BasicAuthenticatorUser;
+import org.apache.druid.server.security.AuthValidator;
 import org.apache.druid.server.security.AuthenticatorMapper;
 import org.easymock.EasyMock;
 import org.junit.After;
@@ -43,12 +44,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 import java.util.Map;
 import java.util.Set;
 
+@RunWith(MockitoJUnitRunner.class)
 public class CoordinatorBasicAuthenticatorResourceTest
 {
   private static final String AUTHENTICATOR_NAME = "test";
@@ -60,8 +65,8 @@ public class CoordinatorBasicAuthenticatorResourceTest
   @Rule
   public final TestDerbyConnector.DerbyConnectorRule derbyConnectorRule = new TestDerbyConnector.DerbyConnectorRule();
 
-  private TestDerbyConnector connector;
-  private MetadataStorageTablesConfig tablesConfig;
+  @Mock
+  private AuthValidator authValidator;
   private BasicAuthenticatorResource resource;
   private CoordinatorBasicAuthenticatorMetadataStorageUpdater storageUpdater;
   private HttpServletRequest req;
@@ -71,8 +76,8 @@ public class CoordinatorBasicAuthenticatorResourceTest
   {
     req = EasyMock.createStrictMock(HttpServletRequest.class);
 
-    connector = derbyConnectorRule.getConnector();
-    tablesConfig = derbyConnectorRule.metadataTablesConfigSupplier().get();
+    TestDerbyConnector connector = derbyConnectorRule.getConnector();
+    MetadataStorageTablesConfig tablesConfig = derbyConnectorRule.metadataTablesConfigSupplier().get();
     connector.createConfigTable();
 
     ObjectMapper objectMapper = new ObjectMapper(new SmileFactory());
@@ -119,7 +124,8 @@ public class CoordinatorBasicAuthenticatorResourceTest
             storageUpdater,
             authenticatorMapper,
             objectMapper
-        )
+        ),
+        authValidator
     );
 
     storageUpdater.start();

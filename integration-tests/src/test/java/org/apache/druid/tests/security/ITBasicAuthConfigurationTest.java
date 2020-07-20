@@ -57,6 +57,7 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MediaType;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -473,6 +474,28 @@ public class ITBasicAuthConfigurationTest
 
     LOG.info("Checking OPTIONS requests on services...");
     testOptionsRequests(adminClient);
+  }
+
+  @Test
+  public void testInvalidAuthNames()
+  {
+    String invalidName = "invalid%2Fname";
+    HttpClient adminClient = new CredentialedHttpClient(
+        new BasicCredentials("admin", "priest"),
+        httpClient
+    );
+
+    makeRequestWithExpectedStatus(
+        adminClient,
+        HttpMethod.POST,
+        StringUtils.format(
+            "%s/druid-ext/basic-security/authentication/listen/%s",
+            config.getCoordinatorUrl(),
+            invalidName
+        ),
+        "SERIALIZED_DATA".getBytes(StandardCharsets.UTF_8),
+        HttpResponseStatus.INTERNAL_SERVER_ERROR
+    );
   }
 
   private void testOptionsRequests(HttpClient httpClient)

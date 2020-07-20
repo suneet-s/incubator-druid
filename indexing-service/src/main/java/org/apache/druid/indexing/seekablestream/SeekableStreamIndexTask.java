@@ -26,8 +26,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import org.apache.druid.common.utils.IdUtils;
 import org.apache.druid.data.input.InputRow;
-import org.apache.druid.indexer.TaskIdUtils;
 import org.apache.druid.indexer.TaskStatus;
 import org.apache.druid.indexing.appenderator.ActionBasedSegmentAllocator;
 import org.apache.druid.indexing.appenderator.ActionBasedUsedSegmentChecker;
@@ -127,7 +127,7 @@ public abstract class SeekableStreamIndexTask<PartitionIdType, SequenceOffsetTyp
 
   private static String makeTaskId(String dataSource, String type)
   {
-    final String suffix = TaskIdUtils.getRandomId();
+    final String suffix = IdUtils.getRandomId();
     return Joiner.on("_").join(type, dataSource, suffix);
   }
 
