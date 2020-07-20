@@ -24,6 +24,7 @@ import com.google.inject.Inject;
 import com.sun.jersey.spi.container.ResourceFilters;
 import org.apache.druid.guice.LazySingleton;
 import org.apache.druid.security.basic.BasicSecurityResourceFilter;
+import org.apache.druid.server.security.AuthValidator;
 import org.apache.druid.server.security.ResourceAction;
 
 import javax.servlet.http.HttpServletRequest;
@@ -44,14 +45,17 @@ import java.util.List;
 @LazySingleton
 public class BasicAuthorizerResource
 {
-  private BasicAuthorizerResourceHandler resourceHandler;
+  private final BasicAuthorizerResourceHandler resourceHandler;
+  private final AuthValidator authValidator;
 
   @Inject
   public BasicAuthorizerResource(
-      BasicAuthorizerResourceHandler resourceHandler
+      BasicAuthorizerResourceHandler resourceHandler,
+      AuthValidator authValidator
   )
   {
     this.resourceHandler = resourceHandler;
+    this.authValidator = authValidator;
   }
 
   /**
@@ -105,6 +109,7 @@ public class BasicAuthorizerResource
       @PathParam("authorizerName") final String authorizerName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.getAllUsers(authorizerName);
   }
 
@@ -127,6 +132,7 @@ public class BasicAuthorizerResource
       @QueryParam("simplifyPermissions") String simplifyPermissions
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.getUser(authorizerName, userName, full != null, simplifyPermissions != null);
   }
 
@@ -149,6 +155,7 @@ public class BasicAuthorizerResource
       @PathParam("userName") String userName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.createUser(authorizerName, userName);
   }
 
@@ -171,6 +178,7 @@ public class BasicAuthorizerResource
       @PathParam("userName") String userName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.deleteUser(authorizerName, userName);
   }
 
@@ -189,6 +197,7 @@ public class BasicAuthorizerResource
       @PathParam("authorizerName") final String authorizerName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.getAllRoles(authorizerName);
   }
 
@@ -213,6 +222,7 @@ public class BasicAuthorizerResource
       @QueryParam("simplifyPermissions") String simplifyPermissions
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.getRole(authorizerName, roleName, full != null, simplifyPermissions != null);
   }
 
@@ -235,6 +245,7 @@ public class BasicAuthorizerResource
       @PathParam("roleName") final String roleName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.createRole(authorizerName, roleName);
   }
 
@@ -257,6 +268,7 @@ public class BasicAuthorizerResource
       @PathParam("roleName") String roleName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.deleteRole(authorizerName, roleName);
   }
 
@@ -281,6 +293,7 @@ public class BasicAuthorizerResource
       @PathParam("roleName") String roleName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.assignRoleToUser(authorizerName, userName, roleName);
   }
 
@@ -305,6 +318,7 @@ public class BasicAuthorizerResource
       @PathParam("roleName") String roleName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.unassignRoleFromUser(authorizerName, userName, roleName);
   }
 
@@ -329,6 +343,7 @@ public class BasicAuthorizerResource
       List<ResourceAction> permissions
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.setRolePermissions(authorizerName, roleName, permissions);
   }
 
@@ -347,6 +362,7 @@ public class BasicAuthorizerResource
       @PathParam("authorizerName") final String authorizerName
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.getCachedMaps(authorizerName);
   }
 
@@ -365,6 +381,7 @@ public class BasicAuthorizerResource
       byte[] serializedUserAndRoleMap
   )
   {
+    authValidator.validateAuthorizerName(authorizerName);
     return resourceHandler.authorizerUpdateListener(authorizerName, serializedUserAndRoleMap);
   }
 }

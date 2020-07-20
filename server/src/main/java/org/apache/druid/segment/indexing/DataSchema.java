@@ -25,8 +25,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import org.apache.druid.common.utils.IdUtils;
 import org.apache.druid.data.input.impl.DimensionsSpec;
 import org.apache.druid.data.input.impl.InputRowParser;
 import org.apache.druid.data.input.impl.TimestampSpec;
@@ -72,8 +72,7 @@ public class DataSchema
     this.parser = parser;
     this.transformSpec = transformSpec == null ? TransformSpec.NONE : transformSpec;
 
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(dataSource), "dataSource cannot be null or empty. Please provide a dataSource.");
-    Preconditions.checkArgument(!dataSource.contains("/"), "dataSource cannot contain the '/' character.");
+    IdUtils.validateId("dataSource", dataSource);
     this.dataSource = dataSource;
 
     if (granularitySpec == null) {
@@ -101,6 +100,7 @@ public class DataSchema
   @JsonProperty
   public String getDataSource()
   {
+    IdUtils.validateId("dataSource", dataSource);
     return dataSource;
   }
 

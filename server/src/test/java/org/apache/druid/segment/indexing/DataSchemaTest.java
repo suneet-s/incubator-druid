@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.text.StringEscapeUtils;
+import org.apache.druid.common.utils.IdUtilsTest;
 import org.apache.druid.data.input.InputRow;
 import org.apache.druid.data.input.impl.DimensionsSpec;
 import org.apache.druid.data.input.impl.JSONParseSpec;
@@ -77,7 +79,7 @@ public class DataSchemaTest
     );
 
     DataSchema schema = new DataSchema(
-        "test",
+        IdUtilsTest.VALID_ID_CHARS,
         parser,
         new AggregatorFactory[]{
             new DoubleSumAggregatorFactory("metric1", "col1"),
@@ -114,7 +116,7 @@ public class DataSchemaTest
     );
 
     DataSchema schema = new DataSchema(
-        "test",
+        IdUtilsTest.VALID_ID_CHARS,
         parser,
         new AggregatorFactory[]{
             new DoubleSumAggregatorFactory("metric1", "col1"),
@@ -151,7 +153,7 @@ public class DataSchemaTest
     );
 
     DataSchema schema = new DataSchema(
-        "test",
+        IdUtilsTest.VALID_ID_CHARS,
         parserMap,
         new AggregatorFactory[]{
             new DoubleSumAggregatorFactory("metric1", "col1"),
@@ -209,7 +211,7 @@ public class DataSchemaTest
     );
 
     DataSchema schema = new DataSchema(
-        "test",
+        IdUtilsTest.VALID_ID_CHARS,
         parser,
         new AggregatorFactory[]{
             new DoubleSumAggregatorFactory("metric1", "col1"),
@@ -242,7 +244,7 @@ public class DataSchemaTest
     );
 
     DataSchema schema = new DataSchema(
-        "test",
+        IdUtilsTest.VALID_ID_CHARS,
         parser,
         new AggregatorFactory[]{
             new DoubleSumAggregatorFactory("metric1", "col1"),
@@ -260,7 +262,7 @@ public class DataSchemaTest
   public void testSerdeWithInvalidParserMap() throws Exception
   {
     String jsonStr = "{"
-                     + "\"dataSource\":\"test\","
+                     + "\"dataSource\":\"" + StringEscapeUtils.escapeJson(IdUtilsTest.VALID_ID_CHARS) + "\","
                      + "\"parser\":{\"type\":\"invalid\"},"
                      + "\"metricsSpec\":[{\"type\":\"doubleSum\",\"name\":\"metric1\",\"fieldName\":\"col1\"}],"
                      + "\"granularitySpec\":{"
@@ -328,7 +330,7 @@ public class DataSchemaTest
   public void testSerde() throws Exception
   {
     String jsonStr = "{"
-                     + "\"dataSource\":\"test\","
+                     + "\"dataSource\":\"" + StringEscapeUtils.escapeJson(IdUtilsTest.VALID_ID_CHARS) + "\","
                      + "\"parser\":{"
                      + "\"type\":\"string\","
                      + "\"parseSpec\":{"
@@ -352,7 +354,7 @@ public class DataSchemaTest
         DataSchema.class
     );
 
-    Assert.assertEquals(actual.getDataSource(), "test");
+    Assert.assertEquals(actual.getDataSource(), IdUtilsTest.VALID_ID_CHARS);
     Assert.assertEquals(
         actual.getParser().getParseSpec(),
         new JSONParseSpec(
@@ -393,7 +395,7 @@ public class DataSchemaTest
     );
 
     DataSchema originalSchema = new DataSchema(
-        "test",
+        IdUtilsTest.VALID_ID_CHARS,
         parser,
         new AggregatorFactory[]{
             new DoubleSumAggregatorFactory("metric1", "col1"),
@@ -432,7 +434,7 @@ public class DataSchemaTest
     );
 
     TestModifiedDataSchema originalSchema = new TestModifiedDataSchema(
-        "test",
+        IdUtilsTest.VALID_ID_CHARS,
         parser,
         new AggregatorFactory[]{
             new DoubleSumAggregatorFactory("metric1", "col1"),
