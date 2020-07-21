@@ -22,6 +22,7 @@ package org.apache.druid.server.coordination;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import org.apache.druid.client.CachingQueryRunner;
 import org.apache.druid.client.cache.Cache;
@@ -30,6 +31,7 @@ import org.apache.druid.client.cache.CachePopulator;
 import org.apache.druid.guice.annotations.Processing;
 import org.apache.druid.guice.annotations.Smile;
 import org.apache.druid.java.util.common.ISE;
+import org.apache.druid.java.util.common.StringUtils;
 import org.apache.druid.java.util.common.guava.FunctionalIterable;
 import org.apache.druid.java.util.emitter.EmittingLogger;
 import org.apache.druid.java.util.emitter.service.ServiceEmitter;
@@ -49,6 +51,7 @@ import org.apache.druid.query.QueryRunnerFactory;
 import org.apache.druid.query.QueryRunnerFactoryConglomerate;
 import org.apache.druid.query.QuerySegmentWalker;
 import org.apache.druid.query.QueryToolChest;
+import org.apache.druid.query.QueryUnsupportedException;
 import org.apache.druid.query.ReferenceCountingSegmentQueryRunner;
 import org.apache.druid.query.ReportTimelineMissingSegmentQueryRunner;
 import org.apache.druid.query.SegmentDescriptor;
@@ -142,6 +145,9 @@ public class ServerManager implements QuerySegmentWalker
     );
 
     if (timeline == null) {
+      // Even though we didn't find a timeline for the query datasource, we simply returns a noopQueryRunner
+      // instead of reporting missing intervals because the query intervals are a filter rather than something
+      // we must find.
       return new NoopQueryRunner<T>();
     }
 
@@ -218,10 +224,13 @@ public class ServerManager implements QuerySegmentWalker
   {
     final QueryRunnerFactory<T, Query<T>> factory = conglomerate.findFactory(query);
     if (factory == null) {
-      log.makeAlert("Unknown query type, [%s]", query.getClass())
+      final QueryUnsupportedException e = new QueryUnsupportedException(
+          StringUtils.format("Unknown query type, [%s]", query.getClass())
+      );
+      log.makeAlert(e, "Error while executing a query[%s]", query.getId())
          .addData("dataSource", query.getDataSource())
          .emit();
-      return new NoopQueryRunner<T>();
+      throw e;
     }
 
     final QueryToolChest<T, Query<T>> toolChest = factory.getToolchest();
@@ -233,7 +242,7 @@ public class ServerManager implements QuerySegmentWalker
     );
 
     if (timeline == null) {
-      return new NoopQueryRunner<T>();
+      return new ReportTimelineMissingSegmentQueryRunner<>(Lists.newArrayList(specs));
     }
 
     final AtomicLong cpuTimeAccumulator = new AtomicLong(0L);
