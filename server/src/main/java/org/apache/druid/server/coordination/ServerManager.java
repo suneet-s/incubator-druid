@@ -51,7 +51,6 @@ import org.apache.druid.query.QueryRunnerFactory;
 import org.apache.druid.query.QueryRunnerFactoryConglomerate;
 import org.apache.druid.query.QuerySegmentWalker;
 import org.apache.druid.query.QueryToolChest;
-import org.apache.druid.query.QueryUnsupportedException;
 import org.apache.druid.query.ReferenceCountingSegmentQueryRunner;
 import org.apache.druid.query.ReportTimelineMissingSegmentQueryRunner;
 import org.apache.druid.query.SegmentDescriptor;
@@ -224,7 +223,7 @@ public class ServerManager implements QuerySegmentWalker
   {
     final QueryRunnerFactory<T, Query<T>> factory = conglomerate.findFactory(query);
     if (factory == null) {
-      final QueryUnsupportedException e = new QueryUnsupportedException(
+      final ISE e = new ISE(
           StringUtils.format("Unknown query type, [%s]", query.getClass())
       );
       log.makeAlert(e, "Error while executing a query[%s]", query.getId())
