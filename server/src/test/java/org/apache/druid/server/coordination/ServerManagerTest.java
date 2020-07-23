@@ -24,6 +24,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import org.apache.druid.client.cache.CacheConfig;
 import org.apache.druid.client.cache.CachePopulatorStats;
 import org.apache.druid.client.cache.ForegroundCachePopulator;
@@ -54,7 +55,6 @@ import org.apache.druid.query.QueryRunner;
 import org.apache.druid.query.QueryRunnerFactory;
 import org.apache.druid.query.QueryRunnerFactoryConglomerate;
 import org.apache.druid.query.QueryToolChest;
-import org.apache.druid.query.QueryUnsupportedException;
 import org.apache.druid.query.Result;
 import org.apache.druid.query.SegmentDescriptor;
 import org.apache.druid.query.TableDataSource;
@@ -63,12 +63,11 @@ import org.apache.druid.query.context.DefaultResponseContext;
 import org.apache.druid.query.context.ResponseContext;
 import org.apache.druid.query.context.ResponseContext.Key;
 import org.apache.druid.query.filter.DimFilter;
-import org.apache.druid.query.planning.DataSourceAnalysis;
 import org.apache.druid.query.search.SearchQuery;
 import org.apache.druid.query.search.SearchResultValue;
-import org.apache.druid.segment.AbstractSegment;
 import org.apache.druid.query.spec.MultipleSpecificSegmentSpec;
 import org.apache.druid.query.spec.QuerySegmentSpec;
+import org.apache.druid.segment.AbstractSegment;
 import org.apache.druid.segment.IndexIO;
 import org.apache.druid.segment.QueryableIndex;
 import org.apache.druid.segment.ReferenceCountingSegment;
@@ -101,7 +100,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -505,10 +503,10 @@ public class ServerManagerTest
   {
     final Interval interval = Intervals.of("P1d/2011-04-01");
     final SearchQuery query = searchQuery("test", interval, Granularities.ALL);
-    final Optional<VersionedIntervalTimeline<String, ReferenceCountingSegment>> maybeTimeline = segmentManager
-        .getTimeline(DataSourceAnalysis.forDataSource(query.getDataSource()));
-    Assert.assertTrue(maybeTimeline.isPresent());
-    final List<TimelineObjectHolder<String, ReferenceCountingSegment>> holders = maybeTimeline.get().lookup(interval);
+    final VersionedIntervalTimeline<String, ReferenceCountingSegment> timeline = segmentManager
+        .getTimeline(Iterables.getOnlyElement(query.getDataSource().getNames()));
+    Assert.assertNotNull(timeline);
+    final List<TimelineObjectHolder<String, ReferenceCountingSegment>> holders = timeline.lookup(interval);
     final List<SegmentDescriptor> closedSegments = new ArrayList<>();
     for (TimelineObjectHolder<String, ReferenceCountingSegment> holder : holders) {
       for (PartitionChunk<ReferenceCountingSegment> chunk : holder.getObject()) {
@@ -536,7 +534,7 @@ public class ServerManagerTest
   {
     final Interval interval = Intervals.of("P1d/2011-04-01");
     final List<SegmentDescriptor> descriptors = Collections.singletonList(new SegmentDescriptor(interval, "1", 0));
-    expectedException.expect(QueryUnsupportedException.class);
+    expectedException.expect(IllegalStateException.class);
     expectedException.expectMessage("Unknown query type");
     serverManager.getQueryRunnerForSegments(
         new BaseQuery<Object>(
