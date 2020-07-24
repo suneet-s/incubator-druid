@@ -80,6 +80,7 @@ import org.apache.druid.segment.realtime.firehose.ChatHandlers;
 import org.apache.druid.server.security.Action;
 import org.apache.druid.server.security.AuthorizerMapper;
 import org.apache.druid.timeline.DataSegment;
+import org.apache.druid.timeline.partition.BuildingNumberedShardSpec;
 import org.apache.druid.timeline.partition.NumberedShardSpec;
 import org.apache.druid.utils.CollectionUtils;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -986,7 +987,7 @@ public class ParallelIndexSupervisorTask extends AbstractBatchIndexTask implemen
         dataSource,
         interval,
         version,
-        new NumberedShardSpec(partitionNum, 0)
+        new BuildingNumberedShardSpec(partitionNum)
     );
   }
 

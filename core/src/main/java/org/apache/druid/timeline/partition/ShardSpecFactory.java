@@ -26,7 +26,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.annotation.Nullable;
 
 /**
- * Factory to be used to allocate segments remotely in the overlord.
+ * This interface is used in the segment allocation protocol when it is coordinated by the Overlord; when appending
+ * segments to an existing datasource (either streaming ingestion or batch append) or any case when segment
+ * lock is used. The implementations of this interface contain all information of the corresponding {@link ShardSpec}
+ * except the partition ID.
+ * The ingestion tasks send all information required for allocating a new segment using this interface and the Overlord
+ * determines the partition ID to create a new segment.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({

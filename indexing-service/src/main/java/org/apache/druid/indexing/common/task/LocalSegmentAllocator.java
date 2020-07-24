@@ -28,7 +28,7 @@ import org.apache.druid.java.util.common.ISE;
 import org.apache.druid.segment.indexing.granularity.GranularitySpec;
 import org.apache.druid.segment.realtime.appenderator.SegmentAllocator;
 import org.apache.druid.segment.realtime.appenderator.SegmentIdWithShardSpec;
-import org.apache.druid.timeline.partition.NumberedShardSpec;
+import org.apache.druid.timeline.partition.BuildingNumberedShardSpec;
 import org.joda.time.DateTime;
 import org.joda.time.Interval;
 
@@ -78,7 +78,7 @@ class LocalSegmentAllocator implements IndexTaskSegmentAllocator
           dataSource,
           interval,
           version,
-          new NumberedShardSpec(partitionNum, 0)
+          new BuildingNumberedShardSpec(partitionNum)
       );
     };
   }
