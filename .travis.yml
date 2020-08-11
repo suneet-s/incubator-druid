@@ -50,7 +50,7 @@ branches:
   - nightly
   - nightly-test
   - latest
-  - /.*-iap.*$/
+  - /.*-iap$/
 
 jobs:
   include:
