@@ -44,6 +44,7 @@ stages:
   - name: cron
     if: type = cron
 
+# Only build release branches
 branches:
   only:
   - master
