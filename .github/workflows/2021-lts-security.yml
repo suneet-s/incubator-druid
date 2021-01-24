@@ -11,15 +11,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  dependencyVulnerabilities:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v2
         with:
+          repository: implydata/druid
           ref: release/2021.01
+          fetch-depth: 0
+          token: ${{ secrets.PAT_FOR_GITHUB_ACTION}}
 
       - name: Run dependency check
         run: |
@@ -31,3 +31,10 @@ jobs:
           information, see https://jeremylong.github.io/DependencyCheck/general/suppression.html).
 
           " && false; }
+      - name: Slack Notification for job failed
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2.1.0
+        env:
+          SLACK_MESSAGE: "There is a vulnerability in the 2021.01-LTS branch file a jira to fix this issue. Can github actions create this JIRA?"
+          SLACK_TITLE: "[FAILED] Found vulnerability in dependencies for release/2021.01"
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
