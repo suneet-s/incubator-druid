@@ -40,6 +40,6 @@ jobs:
         if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2.1.0
         env:
-          SLACK_MESSAGE: "There is a vulnerability in the 2021.01-LTS branch file a jira to fix this issue. Can github actions create this JIRA?"
-          SLACK_TITLE: "[FAILED] Found vulnerability in dependencies for release/2021.01"
+          SLACK_MESSAGE: "There is a ${{ matrix.branch }} vulnerability in the 2021.01-LTS branch file a jira to fix this issue. Can github actions create this JIRA?"
+          SLACK_TITLE: "[FAILED] ${{ matrix.branch }}Found vulnerability in dependencies for release/2021.01"
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
