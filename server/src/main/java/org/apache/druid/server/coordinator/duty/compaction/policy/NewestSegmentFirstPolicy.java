@@ -17,10 +17,12 @@
  * under the License.
  */
 
-package org.apache.druid.server.coordinator.duty;
+package org.apache.druid.server.coordinator.duty.compaction.policy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.druid.java.util.common.guava.Comparators;
 import org.apache.druid.server.coordinator.DataSourceCompactionConfig;
+import org.apache.druid.server.coordinator.duty.CompactionSegmentIterator;
 import org.apache.druid.timeline.SegmentTimeline;
 import org.joda.time.Interval;
 
@@ -46,6 +48,6 @@ public class NewestSegmentFirstPolicy implements CompactionSegmentSearchPolicy
       Map<String, List<Interval>> skipIntervals
   )
   {
-    return new NewestSegmentFirstIterator(objectMapper, compactionConfigs, dataSources, skipIntervals);
+    return new NewestSegmentFirstLastIterator(objectMapper, compactionConfigs, dataSources, skipIntervals, Comparators.intervalsByStartThenEnd());
   }
 }

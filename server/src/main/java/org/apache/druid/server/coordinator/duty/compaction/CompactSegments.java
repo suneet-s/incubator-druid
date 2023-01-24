@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.druid.server.coordinator.duty;
+package org.apache.druid.server.coordinator.duty.compaction;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -44,6 +44,10 @@ import org.apache.druid.server.coordinator.CoordinatorStats;
 import org.apache.druid.server.coordinator.DataSourceCompactionConfig;
 import org.apache.druid.server.coordinator.DruidCoordinatorConfig;
 import org.apache.druid.server.coordinator.DruidCoordinatorRuntimeParams;
+import org.apache.druid.server.coordinator.duty.CompactionSegmentIterator;
+import org.apache.druid.server.coordinator.duty.compaction.policy.CompactionSegmentSearchPolicy;
+import org.apache.druid.server.coordinator.duty.CoordinatorCustomDuty;
+import org.apache.druid.server.coordinator.duty.compaction.policy.NewestSegmentFirstPolicy;
 import org.apache.druid.timeline.DataSegment;
 import org.apache.druid.timeline.SegmentTimeline;
 import org.joda.time.Interval;
@@ -59,21 +63,21 @@ import java.util.stream.Collectors;
 
 public class CompactSegments implements CoordinatorCustomDuty
 {
-  static final String COMPACTION_TASK_COUNT = "compactTaskCount";
-  static final String AVAILABLE_COMPACTION_TASK_SLOT = "availableCompactionTaskSlot";
-  static final String MAX_COMPACTION_TASK_SLOT = "maxCompactionTaskSlot";
+  public static final String COMPACTION_TASK_COUNT = "compactTaskCount";
+  public static final String AVAILABLE_COMPACTION_TASK_SLOT = "availableCompactionTaskSlot";
+  public static final String MAX_COMPACTION_TASK_SLOT = "maxCompactionTaskSlot";
 
-  static final String TOTAL_SIZE_OF_SEGMENTS_SKIPPED = "segmentSizeSkippedCompact";
-  static final String TOTAL_COUNT_OF_SEGMENTS_SKIPPED = "segmentCountSkippedCompact";
-  static final String TOTAL_INTERVAL_OF_SEGMENTS_SKIPPED = "segmentIntervalSkippedCompact";
+  public static final String TOTAL_SIZE_OF_SEGMENTS_SKIPPED = "segmentSizeSkippedCompact";
+  public static final String TOTAL_COUNT_OF_SEGMENTS_SKIPPED = "segmentCountSkippedCompact";
+  public static final String TOTAL_INTERVAL_OF_SEGMENTS_SKIPPED = "segmentIntervalSkippedCompact";
 
-  static final String TOTAL_SIZE_OF_SEGMENTS_AWAITING = "segmentSizeWaitCompact";
-  static final String TOTAL_COUNT_OF_SEGMENTS_AWAITING = "segmentCountWaitCompact";
-  static final String TOTAL_INTERVAL_OF_SEGMENTS_AWAITING = "segmentIntervalWaitCompact";
+  public static final String TOTAL_SIZE_OF_SEGMENTS_AWAITING = "segmentSizeWaitCompact";
+  public static final String TOTAL_COUNT_OF_SEGMENTS_AWAITING = "segmentCountWaitCompact";
+  public static final String TOTAL_INTERVAL_OF_SEGMENTS_AWAITING = "segmentIntervalWaitCompact";
 
-  static final String TOTAL_SIZE_OF_SEGMENTS_COMPACTED = "segmentSizeCompacted";
-  static final String TOTAL_COUNT_OF_SEGMENTS_COMPACTED = "segmentCountCompacted";
-  static final String TOTAL_INTERVAL_OF_SEGMENTS_COMPACTED = "segmentIntervalCompacted";
+  public static final String TOTAL_SIZE_OF_SEGMENTS_COMPACTED = "segmentSizeCompacted";
+  public static final String TOTAL_COUNT_OF_SEGMENTS_COMPACTED = "segmentCountCompacted";
+  public static final String TOTAL_INTERVAL_OF_SEGMENTS_COMPACTED = "segmentIntervalCompacted";
 
   /** Must be synced with org.apache.druid.indexing.common.task.CompactionTask.TYPE. */
   public static final String COMPACTION_TASK_TYPE = "compact";
@@ -98,7 +102,7 @@ public class CompactSegments implements CoordinatorCustomDuty
       @JacksonInject IndexingServiceClient indexingServiceClient
   )
   {
-    this.policy = new NewestSegmentFirstPolicy(objectMapper);
+    this.policy = config.getCompactionSearchPolicy().getSearchPolicy(objectMapper);
     this.indexingServiceClient = indexingServiceClient;
     this.skipLockedIntervals = config.getCompactionSkipLockedIntervals();
     autoCompactionSnapshotPerDataSource.set(new HashMap<>());

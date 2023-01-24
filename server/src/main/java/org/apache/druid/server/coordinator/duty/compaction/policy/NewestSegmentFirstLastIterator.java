@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.druid.server.coordinator.duty;
+package org.apache.druid.server.coordinator.duty.compaction.policy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -45,6 +45,7 @@ import org.apache.druid.segment.IndexSpec;
 import org.apache.druid.segment.SegmentUtils;
 import org.apache.druid.server.coordinator.CompactionStatistics;
 import org.apache.druid.server.coordinator.DataSourceCompactionConfig;
+import org.apache.druid.server.coordinator.duty.CompactionSegmentIterator;
 import org.apache.druid.timeline.CompactionState;
 import org.apache.druid.timeline.DataSegment;
 import org.apache.druid.timeline.Partitions;
@@ -78,9 +79,9 @@ import java.util.stream.Collectors;
 /**
  * This class iterates all segments of the dataSources configured for compaction from the newest to the oldest.
  */
-public class NewestSegmentFirstIterator implements CompactionSegmentIterator
+public class NewestSegmentFirstLastIterator implements CompactionSegmentIterator
 {
-  private static final Logger log = new Logger(NewestSegmentFirstIterator.class);
+  private static final Logger log = new Logger(NewestSegmentFirstLastIterator.class);
 
   private final ObjectMapper objectMapper;
   private final Map<String, DataSourceCompactionConfig> compactionConfigs;
@@ -97,20 +98,25 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
   // run of the compaction job and skip any interval that was already previously compacted.
   private final Map<String, Set<Interval>> intervalCompactedForDatasource = new HashMap<>();
 
-  private final PriorityQueue<QueueEntry> queue = new PriorityQueue<>(
-      (o1, o2) -> Comparators.intervalsByStartThenEnd().compare(o2.interval, o1.interval)
-  );
+  private final PriorityQueue<QueueEntry> queue;
 
-  NewestSegmentFirstIterator(
+  private final Comparator<Interval> intervalComparator;
+
+  NewestSegmentFirstLastIterator(
       ObjectMapper objectMapper,
       Map<String, DataSourceCompactionConfig> compactionConfigs,
       Map<String, SegmentTimeline> dataSources,
-      Map<String, List<Interval>> skipIntervals
+      Map<String, List<Interval>> skipIntervals,
+      Comparator<Interval> intervalComparator
   )
   {
     this.objectMapper = objectMapper;
     this.compactionConfigs = compactionConfigs;
     this.timelineIterators = Maps.newHashMapWithExpectedSize(dataSources.size());
+    this.intervalComparator = intervalComparator;
+    this.queue = new PriorityQueue<>(
+        (o1, o2) -> intervalComparator.compare(o2.interval, o1.interval)
+    );
 
     dataSources.forEach((String dataSource, SegmentTimeline timeline) -> {
       final DataSourceCompactionConfig config = compactionConfigs.get(dataSource);
@@ -170,7 +176,7 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
         final List<Interval> searchIntervals =
             findInitialSearchInterval(dataSource, timeline, config.getSkipOffsetFromLatest(), configuredSegmentGranularity, skipIntervals.get(dataSource));
         if (!searchIntervals.isEmpty()) {
-          timelineIterators.put(dataSource, new CompactibleTimelineObjectHolderCursor(timeline, searchIntervals, originalTimeline));
+          timelineIterators.put(dataSource, new CompactibleTimelineObjectHolderCursor(timeline, searchIntervals, originalTimeline, intervalComparator));
         }
       }
     });
@@ -266,7 +272,8 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
         VersionedIntervalTimeline<String, DataSegment> timeline,
         List<Interval> totalIntervalsToSearch,
         // originalTimeline can be nullable if timeline was not modified
-        @Nullable VersionedIntervalTimeline<String, DataSegment> originalTimeline
+        @Nullable VersionedIntervalTimeline<String, DataSegment> originalTimeline,
+        Comparator<Interval> intervalComparator
     )
     {
       this.holders = totalIntervalsToSearch
@@ -276,6 +283,7 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
               .stream()
               .filter(holder -> isCompactibleHolder(interval, holder))
           )
+          .sorted((lhs, rhs) -> intervalComparator.compare(lhs.getInterval(), rhs.getInterval()))
           .collect(Collectors.toList());
       this.originalTimeline = originalTimeline;
     }
@@ -618,7 +626,8 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
         last.getInterval().getEnd(),
         skipOffset,
         configuredSegmentGranularity,
-        skipIntervals
+        skipIntervals,
+        intervalComparator
     );
 
     // Calcuate stats of all skipped segments
@@ -669,7 +678,8 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
       DateTime latest,
       Period skipOffset,
       Granularity configuredSegmentGranularity,
-      @Nullable List<Interval> skipIntervals
+      @Nullable List<Interval> skipIntervals,
+      Comparator<Interval> intervalComparator
   )
   {
     final List<Interval> nonNullSkipIntervals = skipIntervals == null
@@ -686,7 +696,7 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
 
     if (skipIntervals != null) {
       final List<Interval> sortedSkipIntervals = new ArrayList<>(skipIntervals);
-      sortedSkipIntervals.sort(Comparators.intervalsByStartThenEnd());
+      sortedSkipIntervals.sort(intervalComparator);
 
       final List<Interval> overlapIntervals = new ArrayList<>();
 

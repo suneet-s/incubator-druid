@@ -17,9 +17,11 @@
  * under the License.
  */
 
-package org.apache.druid.server.coordinator.duty;
+package org.apache.druid.server.coordinator.duty.compaction.policy;
 
 import org.apache.druid.server.coordinator.DataSourceCompactionConfig;
+import org.apache.druid.server.coordinator.duty.CompactionSegmentIterator;
+import org.apache.druid.server.coordinator.duty.compaction.CompactSegments;
 import org.apache.druid.timeline.SegmentTimeline;
 import org.joda.time.Interval;
 

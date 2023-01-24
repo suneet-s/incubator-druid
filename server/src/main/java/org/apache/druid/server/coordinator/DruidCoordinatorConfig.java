@@ -19,6 +19,7 @@
 
 package org.apache.druid.server.coordinator;
 
+import org.apache.druid.server.coordinator.duty.compaction.policy.SearchPolicy;
 import org.joda.time.Duration;
 import org.skife.config.Config;
 import org.skife.config.Default;
@@ -135,6 +136,12 @@ public abstract class DruidCoordinatorConfig
   public boolean getCompactionSkipLockedIntervals()
   {
     return true;
+  }
+
+  @Config("druid.coordinator.compaction.policy")
+  public SearchPolicy getCompactionSearchPolicy()
+  {
+    return SearchPolicy.NEWEST_FIRST;
   }
 
 }

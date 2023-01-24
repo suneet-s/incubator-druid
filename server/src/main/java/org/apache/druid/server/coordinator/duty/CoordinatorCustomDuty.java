@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.apache.druid.guice.annotations.ExtensionPoint;
 import org.apache.druid.initialization.DruidModule;
+import org.apache.druid.server.coordinator.duty.compaction.CompactSegments;
 
 /**
  * This {@link ExtensionPoint} allows for coordinator duty to be pluggable

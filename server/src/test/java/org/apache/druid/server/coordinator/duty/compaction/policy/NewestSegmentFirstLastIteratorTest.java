@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.druid.server.coordinator.duty;
+package org.apache.druid.server.coordinator.duty.compaction.policy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -27,6 +27,7 @@ import org.apache.druid.indexer.partitions.HashedPartitionsSpec;
 import org.apache.druid.indexer.partitions.SingleDimensionPartitionsSpec;
 import org.apache.druid.java.util.common.DateTimes;
 import org.apache.druid.java.util.common.Intervals;
+import org.apache.druid.java.util.common.guava.Comparators;
 import org.apache.druid.server.coordinator.DataSourceCompactionConfig;
 import org.apache.druid.server.coordinator.UserCompactionTaskQueryTuningConfig;
 import org.joda.time.Interval;
@@ -36,7 +37,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-public class NewestSegmentFirstIteratorTest
+public class NewestSegmentFirstLastIteratorTest
 {
   @Test
   public void testFilterSkipIntervals()
@@ -48,7 +49,7 @@ public class NewestSegmentFirstIteratorTest
         Intervals.of("2018-10-02/2018-12-25"),
         Intervals.of("2018-12-31/2019-01-01")
     );
-    final List<Interval> skipIntervals = NewestSegmentFirstIterator.filterSkipIntervals(
+    final List<Interval> skipIntervals = NewestSegmentFirstLastIterator.filterSkipIntervals(
         totalInterval,
         Lists.newArrayList(
             Intervals.of("2017-12-01/2018-01-15"),
@@ -68,14 +69,15 @@ public class NewestSegmentFirstIteratorTest
         Intervals.of("2018-12-24/2018-12-25"),
         Intervals.of("2018-12-29/2019-01-01")
     );
-    final List<Interval> fullSkipIntervals = NewestSegmentFirstIterator.sortAndAddSkipIntervalFromLatest(
+    final List<Interval> fullSkipIntervals = NewestSegmentFirstLastIterator.sortAndAddSkipIntervalFromLatest(
         DateTimes.of("2019-01-01"),
         new Period(72, 0, 0, 0),
         null,
         ImmutableList.of(
             Intervals.of("2018-12-30/2018-12-31"),
             Intervals.of("2018-12-24/2018-12-25")
-        )
+        ),
+        Comparators.intervalsByStartThenEnd()
     );
 
     Assert.assertEquals(expectedIntervals, fullSkipIntervals);
@@ -100,7 +102,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new DynamicPartitionsSpec(null, Long.MAX_VALUE),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -145,7 +147,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new DynamicPartitionsSpec(null, Long.MAX_VALUE),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -190,7 +192,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new DynamicPartitionsSpec(null, 1000L),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -235,7 +237,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new DynamicPartitionsSpec(100, 1000L),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -280,7 +282,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new DynamicPartitionsSpec(100, 1000L),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -325,7 +327,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new DynamicPartitionsSpec(null, Long.MAX_VALUE),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -370,7 +372,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new DynamicPartitionsSpec(null, Long.MAX_VALUE),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -415,7 +417,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new HashedPartitionsSpec(null, 10, ImmutableList.of("dim")),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
@@ -460,7 +462,7 @@ public class NewestSegmentFirstIteratorTest
     );
     Assert.assertEquals(
         new SingleDimensionPartitionsSpec(10000, null, "dim", false),
-        NewestSegmentFirstIterator.findPartitionsSpecFromConfig(
+        NewestSegmentFirstLastIterator.findPartitionsSpecFromConfig(
             ClientCompactionTaskQueryTuningConfig.from(config.getTuningConfig(), config.getMaxRowsPerSegment(), null)
         )
     );
