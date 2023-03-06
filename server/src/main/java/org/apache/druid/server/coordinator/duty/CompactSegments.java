@@ -125,7 +125,7 @@ public class CompactSegments implements CoordinatorCustomDuty
   @Override
   public DruidCoordinatorRuntimeParams run(DruidCoordinatorRuntimeParams params)
   {
-    LOG.info("Compact segments");
+    LOG.debug("Compact segments");
 
     final CoordinatorCompactionConfig dynamicConfig = params.getCoordinatorCompactionConfig();
     final CoordinatorStats stats = new CoordinatorStats();

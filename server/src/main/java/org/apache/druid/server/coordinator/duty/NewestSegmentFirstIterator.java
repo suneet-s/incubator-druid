@@ -199,10 +199,19 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
   @Override
   public void forEachRemainingSegmentsToCompact(Consumer<List<DataSegment>> action)
   {
-    for (CompactibleTimelineObjectHolderCursor compactibleTimelineObjectHolderCursor : timelineIterators.values()) {
+    // First read all the elements on the queue that should be processed
+    if (!queue.isEmpty()) {
+      queue.forEach(queueEntry -> action.accept(queueEntry.segments));
+    }
+    for (Map.Entry<String, CompactibleTimelineObjectHolderCursor> dataSourceAndTimeline : timelineIterators.entrySet()) {
+      String dataSourceName = dataSourceAndTimeline.getKey();
+      CompactibleTimelineObjectHolderCursor compactibleTimelineObjectHolderCursor = dataSourceAndTimeline.getValue();
       for (TimelineObjectHolder<String, DataSegment> holder : compactibleTimelineObjectHolderCursor.holders) {
-        List<DataSegment> candidates = compactibleTimelineObjectHolderCursor.getCandidates(holder);
-        action.accept(candidates);
+        List<DataSegment> segments = compactibleTimelineObjectHolderCursor.getCandidates(holder);
+        SegmentsToCompact segmentsToCompact = processSegmentsToCompact(dataSourceName, segments);
+        if (segmentsToCompact != null) {
+          action.accept(segmentsToCompact.segments);
+        }
       }
     }
   }
@@ -255,8 +264,7 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
 
     final SegmentsToCompact segmentsToCompact = findSegmentsToCompact(
         dataSourceName,
-        compactibleTimelineObjectHolderCursor,
-        config
+        compactibleTimelineObjectHolderCursor
     );
 
     if (!segmentsToCompact.isEmpty()) {
@@ -543,57 +551,73 @@ public class NewestSegmentFirstIterator implements CompactionSegmentIterator
    */
   private SegmentsToCompact findSegmentsToCompact(
       final String dataSourceName,
-      final CompactibleTimelineObjectHolderCursor compactibleTimelineObjectHolderCursor,
-      final DataSourceCompactionConfig config
+      final CompactibleTimelineObjectHolderCursor compactibleTimelineObjectHolderCursor
   )
   {
-    final long inputSegmentSize = config.getInputSegmentSizeBytes();
-
     while (compactibleTimelineObjectHolderCursor.hasNext()) {
       List<DataSegment> segments = compactibleTimelineObjectHolderCursor.next();
-      final SegmentsToCompact candidates = new SegmentsToCompact(segments);
-      if (!candidates.isEmpty()) {
-        final boolean isCompactibleSize = candidates.getTotalSize() <= inputSegmentSize;
-        final boolean needsCompaction = needsCompaction(
-            config,
-            candidates
-        );
-
-        if (isCompactibleSize && needsCompaction) {
-          if (config.getGranularitySpec() != null && config.getGranularitySpec().getSegmentGranularity() != null) {
-            Interval interval = candidates.getUmbrellaInterval();
-            Set<Interval> intervalsCompacted = intervalCompactedForDatasource.computeIfAbsent(dataSourceName, k -> new HashSet<>());
-            // Skip this candidates if we have compacted the interval already
-            if (intervalsCompacted.contains(interval)) {
-              continue;
-            }
-            intervalsCompacted.add(interval);
-          }
-          return candidates;
-        } else {
-          if (!needsCompaction) {
-            // Collect statistic for segments that is already compacted
-            collectSegmentStatistics(compactedSegments, dataSourceName, candidates);
-          } else {
-            // Collect statistic for segments that is skipped
-            // Note that if segments does not need compaction then we do not double count here
-            collectSegmentStatistics(skippedSegments, dataSourceName, candidates);
-            log.warn(
-                "total segment size[%d] for datasource[%s] and interval[%s] is larger than inputSegmentSize[%d]."
-                + " Continue to the next interval.",
-                candidates.getTotalSize(),
-                candidates.segments.get(0).getDataSource(),
-                candidates.segments.get(0).getInterval(),
-                inputSegmentSize
-            );
-          }
-        }
-      } else {
-        throw new ISE("No segment is found?");
+      SegmentsToCompact segmentsToCompact = processSegmentsToCompact(dataSourceName, segments);
+      if (segmentsToCompact != null) {
+        return segmentsToCompact;
       }
     }
     log.info("All segments look good! Nothing to compact");
     return new SegmentsToCompact();
+  }
+
+  @Nullable
+  private SegmentsToCompact processSegmentsToCompact(
+      String dataSourceName,
+      List<DataSegment> segments
+  )
+  {
+    DataSourceCompactionConfig config = compactionConfigs.get(dataSourceName);
+    if (config == null) {
+      log.warn("Compaction config not found for %s. Skipping compaction", dataSourceName);
+      return null;
+    }
+    final long inputSegmentSize = config.getInputSegmentSizeBytes();
+    final SegmentsToCompact candidates = new SegmentsToCompact(segments);
+    if (!candidates.isEmpty()) {
+      final boolean isCompactibleSize = candidates.getTotalSize() <= inputSegmentSize;
+      final boolean needsCompaction = needsCompaction(
+          config,
+          candidates
+      );
+
+      if (isCompactibleSize && needsCompaction) {
+        if (config.getGranularitySpec() != null && config.getGranularitySpec().getSegmentGranularity() != null) {
+          Interval interval = candidates.getUmbrellaInterval();
+          Set<Interval> intervalsCompacted = intervalCompactedForDatasource.computeIfAbsent(dataSourceName, k -> new HashSet<>());
+          // Skip this candidates if we have compacted the interval already
+          if (intervalsCompacted.contains(interval)) {
+            return null;
+          }
+          intervalsCompacted.add(interval);
+        }
+        return candidates;
+      } else {
+        if (!needsCompaction) {
+          // Collect statistic for segments that is already compacted
+          collectSegmentStatistics(compactedSegments, dataSourceName, candidates);
+        } else {
+          // Collect statistic for segments that is skipped
+          // Note that if segments does not need compaction then we do not double count here
+          collectSegmentStatistics(skippedSegments, dataSourceName, candidates);
+          log.warn(
+              "total segment size[%d] for datasource[%s] and interval[%s] is larger than inputSegmentSize[%d]."
+              + " Continue to the next interval.",
+              candidates.getTotalSize(),
+              candidates.segments.get(0).getDataSource(),
+              candidates.segments.get(0).getInterval(),
+              inputSegmentSize
+          );
+        }
+      }
+    } else {
+      throw new ISE("No segment is found?");
+    }
+    return null;
   }
 
   private void collectSegmentStatistics(
