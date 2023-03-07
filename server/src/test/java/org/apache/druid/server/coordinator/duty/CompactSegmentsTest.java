@@ -142,6 +142,7 @@ public class CompactSegmentsTest
   private static final int TOTAL_INTERVAL_PER_DATASOURCE = 11;
   private static final int MAXIMUM_CAPACITY_WITH_AUTO_SCALE = 10;
   private static final FixedAdvancingClock CLOCK = new FixedAdvancingClock(Instant.now());
+
   @Parameterized.Parameters(name = "{0}")
   public static Collection<Object[]> constructorFeeder()
   {

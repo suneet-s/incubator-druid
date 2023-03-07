@@ -57,6 +57,9 @@ public class NewestSegmentFirstPolicy implements CompactionSegmentSearchPolicy
     Preconditions.checkArgument(durationMillis > 0);
   }
 
+  // suppress warnings because guarded by is not correctly picking up the double locking mechanism.
+  // This pattern is validated by its use in {@link com.google.common.base.Suppliers.ExpiringMemoizingSupplier}
+  @SuppressWarnings("GuardedBy")
   @Override
   public Pair<CompactionSegmentIterator, Boolean> resetIfNeeded(
       Map<String, DataSourceCompactionConfig> compactionConfigs,
