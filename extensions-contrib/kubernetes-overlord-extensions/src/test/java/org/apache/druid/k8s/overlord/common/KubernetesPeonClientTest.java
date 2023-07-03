@@ -31,6 +31,8 @@ import io.fabric8.kubernetes.client.dsl.LogWatch;
 import io.fabric8.kubernetes.client.server.mock.EnableKubernetesMockClient;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 import org.apache.druid.java.util.common.StringUtils;
+import org.apache.druid.java.util.emitter.service.ServiceEmitter;
+import org.apache.druid.java.util.metrics.StubServiceEmitter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,12 +55,14 @@ public class KubernetesPeonClientTest
   private KubernetesMockServer server;
   private KubernetesClientApi clientApi;
   private KubernetesPeonClient instance;
+  private ServiceEmitter emitter;
 
   @BeforeEach
   public void setup()
   {
+    emitter = new StubServiceEmitter();
     clientApi = new TestKubernetesClient(this.client);
-    instance = new KubernetesPeonClient(clientApi, NAMESPACE, false);
+    instance = new KubernetesPeonClient(clientApi, NAMESPACE, false, emitter);
   }
 
   @Test
@@ -203,7 +207,8 @@ public class KubernetesPeonClientTest
     KubernetesPeonClient instance = new KubernetesPeonClient(
         new TestKubernetesClient(this.client),
         NAMESPACE,
-        true
+        true,
+        emitter
     );
 
     Job job = new JobBuilder()
@@ -227,7 +232,8 @@ public class KubernetesPeonClientTest
     KubernetesPeonClient instance = new KubernetesPeonClient(
         new TestKubernetesClient(this.client),
         NAMESPACE,
-        true
+        true,
+        emitter
     );
 
     Assertions.assertTrue(instance.deletePeonJob(new K8sTaskId(ID)));

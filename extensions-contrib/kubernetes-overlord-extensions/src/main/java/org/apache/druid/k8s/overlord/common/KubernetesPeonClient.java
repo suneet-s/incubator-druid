@@ -27,6 +27,8 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.LogWatch;
 import org.apache.druid.java.util.common.RetryUtils;
 import org.apache.druid.java.util.emitter.EmittingLogger;
+import org.apache.druid.java.util.emitter.service.ServiceEmitter;
+import org.apache.druid.java.util.emitter.service.ServiceMetricEvent;
 
 import java.io.InputStream;
 import java.sql.Timestamp;
@@ -42,12 +44,19 @@ public class KubernetesPeonClient
   private final KubernetesClientApi clientApi;
   private final String namespace;
   private final boolean debugJobs;
+  private final ServiceEmitter emitter;
 
-  public KubernetesPeonClient(KubernetesClientApi clientApi, String namespace, boolean debugJobs)
+  public KubernetesPeonClient(
+      KubernetesClientApi clientApi,
+      String namespace,
+      boolean debugJobs,
+      ServiceEmitter emitter
+  )
   {
     this.clientApi = clientApi;
     this.namespace = namespace;
     this.debugJobs = debugJobs;
+    this.emitter = emitter;
   }
 
   public Pod launchPeonJobAndWaitForStart(Job job, long howLong, TimeUnit timeUnit)
@@ -55,6 +64,10 @@ public class KubernetesPeonClient
     long start = System.currentTimeMillis();
     // launch job
     return clientApi.executeRequest(client -> {
+      ServiceMetricEvent.Builder eventBuilder = ServiceMetricEvent.builder();
+      eventBuilder.setDimension("namespace", namespace).setDimension("job.name", job.getMetadata().getName());
+      job.getMetadata().getLabels().forEach((k, v) -> eventBuilder.setDimension("job.label." + k, v));
+      job.getMetadata().getAnnotations().forEach((k, v) -> eventBuilder.setDimension("job.annotation." + k, v));
       client.batch().v1().jobs().inNamespace(namespace).resource(job).create();
       K8sTaskId taskId = new K8sTaskId(job.getMetadata().getName());
       log.info("Successfully submitted job: %s ... waiting for job to launch", taskId);
@@ -68,6 +81,7 @@ public class KubernetesPeonClient
                            return pod.getStatus() != null && pod.getStatus().getPodIP() != null;
                          }, howLong, timeUnit);
       long duration = System.currentTimeMillis() - start;
+      emitter.emit(eventBuilder.build("k8s/peon/launchTime", duration));
       log.info("Took task %s %d ms for pod to startup", taskId, duration);
       return result;
     });
@@ -75,6 +89,12 @@ public class KubernetesPeonClient
 
   public JobResponse waitForPeonJobCompletion(K8sTaskId taskId, long howLong, TimeUnit unit)
   {
+    ServiceMetricEvent.Builder eventBuilder = ServiceMetricEvent.builder();
+    eventBuilder.setDimension("taskId", taskId.getOriginalTaskId())
+                .setDimension("name", taskId.getK8sTaskId())
+                .setDimension("namespace", namespace)
+                .setDimension("peonPhase", PeonPhase.UNKNOWN);
+    emitter.emit(eventBuilder.build("k8s/peon/status", 1));
     return clientApi.executeRequest(client -> {
       Job job = client.batch()
                       .v1()
@@ -83,18 +103,22 @@ public class KubernetesPeonClient
                       .withName(taskId.getK8sTaskId())
                       .waitUntilCondition(
                           x -> (x == null) || (x.getStatus() != null && x.getStatus().getActive() == null
-                          && (x.getStatus().getFailed() != null || x.getStatus().getSucceeded() != null)),
+                                               && (x.getStatus().getFailed() != null
+                                                   || x.getStatus().getSucceeded() != null)),
                           howLong,
                           unit
                       );
       if (job == null) {
         log.info("K8s job for the task [%s] was not found. It can happen if the task was canceled", taskId);
-        return new JobResponse(null, PeonPhase.FAILED);
+        emitter.emit(eventBuilder.setDimension("peonPhase", PeonPhase.CANCELED).build("k8s/peon/status", 1));
+        return new JobResponse(null, PeonPhase.CANCELED);
       }
       if (job.getStatus().getSucceeded() != null) {
+        emitter.emit(eventBuilder.setDimension("peonPhase", PeonPhase.SUCCEEDED).build("k8s/peon/status", 1));
         return new JobResponse(job, PeonPhase.SUCCEEDED);
       }
       log.warn("Task %s failed with status %s", taskId, job.getStatus());
+      emitter.emit(eventBuilder.setDimension("peonPhase", PeonPhase.FAILED).build("k8s/peon/status", 1));
       return new JobResponse(job, PeonPhase.FAILED);
     });
   }
@@ -125,12 +149,12 @@ public class KubernetesPeonClient
     KubernetesClient k8sClient = clientApi.getClient();
     try {
       LogWatch logWatch = k8sClient.batch()
-          .v1()
-          .jobs()
-          .inNamespace(namespace)
-          .withName(taskId.getK8sTaskId())
-          .inContainer("main")
-          .watchLog();
+                                   .v1()
+                                   .jobs()
+                                   .inNamespace(namespace)
+                                   .withName(taskId.getK8sTaskId())
+                                   .inContainer("main")
+                                   .watchLog();
       if (logWatch == null) {
         return Optional.absent();
       }
@@ -147,12 +171,12 @@ public class KubernetesPeonClient
     KubernetesClient k8sClient = clientApi.getClient();
     try {
       InputStream logStream = k8sClient.batch()
-                                   .v1()
-                                   .jobs()
-                                   .inNamespace(namespace)
-                                   .withName(taskId.getK8sTaskId())
-                                   .inContainer("main")
-                                   .getLogInputStream();
+                                       .v1()
+                                       .jobs()
+                                       .inNamespace(namespace)
+                                       .withName(taskId.getK8sTaskId())
+                                       .inContainer("main")
+                                       .getLogInputStream();
       if (logStream == null) {
         return Optional.absent();
       }
@@ -220,10 +244,10 @@ public class KubernetesPeonClient
   private Optional<Pod> getPeonPod(KubernetesClient client, K8sTaskId taskId)
   {
     List<Pod> pods = client.pods()
-        .inNamespace(namespace)
-        .withLabel("job-name", taskId.getK8sTaskId())
-        .list()
-        .getItems();
+                           .inNamespace(namespace)
+                           .withLabel("job-name", taskId.getK8sTaskId())
+                           .list()
+                           .getItems();
     return pods.isEmpty() ? Optional.absent() : Optional.of(pods.get(0));
   }
 

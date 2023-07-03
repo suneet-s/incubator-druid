@@ -36,6 +36,11 @@ public class StubServiceEmitter extends ServiceEmitter implements MetricsVerifie
   private final List<AlertEvent> alertEvents = new ArrayList<>();
   private final Map<String, List<ServiceMetricEvent>> metricEvents = new HashMap<>();
 
+  public StubServiceEmitter()
+  {
+    this("service", "host");
+  }
+
   public StubServiceEmitter(String service, String host)
   {
     super(service, host, null);

@@ -32,7 +32,8 @@ public enum PeonPhase
   SUCCEEDED("Succeeded"),
   FAILED("Failed"),
   UNKNOWN("Unknown"),
-  RUNNING("Running");
+  RUNNING("Running"),
+  CANCELED("CANCELED") ;
 
   private static final Map<String, PeonPhase> PHASE_MAP = Arrays.stream(PeonPhase.values())
                                                                 .collect(Collectors.toMap(
