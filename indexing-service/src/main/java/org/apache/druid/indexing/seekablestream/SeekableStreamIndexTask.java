@@ -208,7 +208,7 @@ public abstract class SeekableStreamIndexTask<PartitionIdType, SequenceOffsetTyp
         rowIngestionMeters,
         parseExceptionHandler,
         isUseMaxMemoryEstimates(),
-        toolbox.getCentralizedTableSchemaConfig()
+        toolbox.getCentralizedDataSourceSchemaConfig()
     );
   }
 

@@ -807,7 +807,7 @@ public class AppenderatorDriverRealtimeIndexTask extends AbstractTask
         rowIngestionMeters,
         parseExceptionHandler,
         isUseMaxMemoryEstimates(),
-        toolbox.getCentralizedTableSchemaConfig()
+        toolbox.getCentralizedDataSourceSchemaConfig()
     );
   }
 

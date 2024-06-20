@@ -42,6 +42,8 @@ import org.apache.druid.segment.realtime.FireDepartmentMetrics;
 import org.apache.druid.server.coordination.DataSegmentAnnouncer;
 import org.joda.time.Interval;
 
+import javax.annotation.Nullable;
+
 /**
  * This interface defines entities that create and manage potentially multiple {@link Appenderator} instances.
  *
@@ -86,7 +88,7 @@ public interface AppenderatorsManager
       RowIngestionMeters rowIngestionMeters,
       ParseExceptionHandler parseExceptionHandler,
       boolean useMaxMemoryEstimates,
-      CentralizedDatasourceSchemaConfig centralizedDatasourceSchemaConfig
+      @Nullable CentralizedDatasourceSchemaConfig centralizedDatasourceSchemaConfig
   );
 
   /**

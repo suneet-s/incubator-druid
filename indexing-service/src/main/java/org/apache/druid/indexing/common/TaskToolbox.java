@@ -132,6 +132,8 @@ public class TaskToolbox
 
   private final TaskLogPusher taskLogPusher;
   private final String attemptId;
+
+  @Nullable
   private final CentralizedDatasourceSchemaConfig centralizedDatasourceSchemaConfig;
 
   public TaskToolbox(
@@ -492,7 +494,8 @@ public class TaskToolbox
     return createAdjustedRuntimeInfo(JvmUtils.getRuntimeInfo(), appenderatorsManager);
   }
 
-  public CentralizedDatasourceSchemaConfig getCentralizedTableSchemaConfig()
+  @Nullable
+  public CentralizedDatasourceSchemaConfig getCentralizedDataSourceSchemaConfig()
   {
     return centralizedDatasourceSchemaConfig;
   }

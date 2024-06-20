@@ -309,7 +309,8 @@ abstract class PartialSegmentMergeTask<S extends ShardSpec> extends PerfectRollu
         long pushFinishTime = System.nanoTime();
         pushedSegments.add(segment);
 
-        if (toolbox.getCentralizedTableSchemaConfig().isEnabled()) {
+        CentralizedDatasourceSchemaConfig centralizedDatasourceSchemaConfig = toolbox.getCentralizedDataSourceSchemaConfig();
+        if (centralizedDatasourceSchemaConfig != null && centralizedDatasourceSchemaConfig.isEnabled()) {
           SchemaPayloadPlus schemaPayloadPlus =
               TaskSegmentSchemaUtil.getSegmentSchema(mergedFileAndDimensionNames.lhs, toolbox.getIndexIO());
           segmentSchemaMapping.addSchema(
@@ -335,7 +336,8 @@ abstract class PartialSegmentMergeTask<S extends ShardSpec> extends PerfectRollu
         );
       }
     }
-    if (toolbox.getCentralizedTableSchemaConfig().isEnabled()) {
+    CentralizedDatasourceSchemaConfig centralizedDatasourceSchemaConfig = toolbox.getCentralizedDataSourceSchemaConfig();
+    if (centralizedDatasourceSchemaConfig != null && centralizedDatasourceSchemaConfig.isEnabled()) {
       LOG.info("SegmentSchema for the pushed segments is [%s]", segmentSchemaMapping);
     }
     return new DataSegmentsWithSchemas(pushedSegments, segmentSchemaMapping.isNonEmpty() ? segmentSchemaMapping : null);

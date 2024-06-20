@@ -360,7 +360,7 @@ public class ParallelIndexSupervisorTask extends AbstractBatchIndexTask
         baseSubtaskSpecName,
         ingestionSchema,
         getContext(),
-        toolbox.getCentralizedTableSchemaConfig()
+        toolbox.getCentralizedDataSourceSchemaConfig()
     );
   }
 

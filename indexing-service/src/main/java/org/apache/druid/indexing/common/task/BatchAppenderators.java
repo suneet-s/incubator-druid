@@ -88,7 +88,7 @@ public final class BatchAppenderators
           rowIngestionMeters,
           parseExceptionHandler,
           useMaxMemoryEstimates,
-          toolbox.getCentralizedTableSchemaConfig()
+          toolbox.getCentralizedDataSourceSchemaConfig()
       );
     } else if (toolbox.getConfig().getBatchProcessingMode() == TaskConfig.BatchProcessingMode.CLOSED_SEGMENTS) {
       return appenderatorsManager.createClosedSegmentsOfflineAppenderatorForTask(
@@ -103,7 +103,7 @@ public final class BatchAppenderators
           rowIngestionMeters,
           parseExceptionHandler,
           useMaxMemoryEstimates,
-          toolbox.getCentralizedTableSchemaConfig()
+          toolbox.getCentralizedDataSourceSchemaConfig()
       );
     } else if (toolbox.getConfig().getBatchProcessingMode() == TaskConfig.BatchProcessingMode.CLOSED_SEGMENTS_SINKS) {
       return appenderatorsManager.createOfflineAppenderatorForTask(
@@ -118,7 +118,7 @@ public final class BatchAppenderators
           rowIngestionMeters,
           parseExceptionHandler,
           useMaxMemoryEstimates,
-          toolbox.getCentralizedTableSchemaConfig()
+          toolbox.getCentralizedDataSourceSchemaConfig()
       );
     } else {
       throw new IAE("Invalid batchProcesingMode[%s]", toolbox.getConfig().getBatchProcessingMode());
