@@ -132,6 +132,7 @@ public class TaskToolbox
 
   private final TaskLogPusher taskLogPusher;
   private final String attemptId;
+
   private final CentralizedDatasourceSchemaConfig centralizedDatasourceSchemaConfig;
 
   public TaskToolbox(
@@ -219,7 +220,9 @@ public class TaskToolbox
     this.shuffleClient = shuffleClient;
     this.taskLogPusher = taskLogPusher;
     this.attemptId = attemptId;
-    this.centralizedDatasourceSchemaConfig = centralizedDatasourceSchemaConfig;
+    this.centralizedDatasourceSchemaConfig =
+        centralizedDatasourceSchemaConfig == null ? CentralizedDatasourceSchemaConfig.create()
+                                                  : centralizedDatasourceSchemaConfig;
   }
 
   public SegmentLoaderConfig getSegmentLoaderConfig()
