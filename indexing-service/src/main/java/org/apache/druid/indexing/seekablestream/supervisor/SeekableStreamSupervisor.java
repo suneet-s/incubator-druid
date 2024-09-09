@@ -203,7 +203,7 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
     final String baseSequenceName;
     DateTime completionTimeout; // is set after signalTasksToFinish(); if not done by timeout, take corrective action
 
-    boolean handoffEarly = false; // set by SupervisorManager.stopTaskGroupEarly
+    @Nullable DateTime handoffEarly; // set by SupervisorManager.stopTaskGroupEarly
 
     TaskGroup(
         int groupId,
@@ -255,6 +255,11 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
                                                     ? exclusiveStartSequenceNumberPartitions
                                                     : Collections.emptySet();
       this.baseSequenceName = baseSequenceName;
+      if (maximumMessageTime.isPresent()) {
+        // Ask to handoff 5 minutes before the max message rejection time to prevent accidental rejection
+        // of data for long running tasks
+        handoffEarly = maximumMessageTime.get().minusMinutes(5);
+      }
     }
 
     int addNewCheckpoint(Map<PartitionIdType, SequenceOffsetType> checkpoint)
@@ -268,14 +273,14 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
       return tasks.keySet();
     }
 
-    void setHandoffEarly()
+    void setHandoffEarly(DateTime dateTime)
     {
-      handoffEarly = true;
+      handoffEarly = dateTime;
     }
 
-    Boolean getHandoffEarly()
+    boolean isHandoffEarly()
     {
-      return handoffEarly;
+      return handoffEarly != null && handoffEarly.isBeforeNow();
     }
 
     @VisibleForTesting
@@ -691,7 +696,7 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
           continue;
         }
         log.info("Task group [%d] for supervisor [%s] will handoff early.", taskGroupId, supervisorId);
-        taskGroup.setHandoffEarly();
+        taskGroup.setHandoffEarly(DateTime.now());
       }
     }
 
@@ -2140,7 +2145,7 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
                                   log.info("Creating a new task group for taskGroupId[%d]", taskGroupId);
                                   // We reassign the task's original base sequence name (from the existing task) to the
                                   // task group so that the replica segment allocations are the same.
-                                  return new TaskGroup(
+                                  TaskGroup tg = new TaskGroup(
                                       taskGroupId,
                                       ImmutableMap.copyOf(
                                           seekableStreamIndexTask.getIOConfig()
@@ -2155,6 +2160,7 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
                                                              .getExclusivePartitions(),
                                       seekableStreamIndexTask.getIOConfig().getBaseSequenceName()
                                   );
+                                  return tg;
                                 }
                             );
                             taskGroupsToVerify.put(taskGroupId, taskGroup);
@@ -3206,7 +3212,7 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
 
           final DateTime earliestTaskStart = computeEarliestTaskStartTime(group);
           final Duration runDuration = Duration.millis(DateTimes.nowUtc().getMillis() - earliestTaskStart.getMillis());
-          if (stopTasksEarly || group.getHandoffEarly()) {
+          if (stopTasksEarly || group.isHandoffEarly()) {
             // If handoffEarly has been set, stop tasks irrespective of stopTaskCount
             log.info(
                 "Stopping taskGroup[%d] early after running for duration[%s].",
@@ -3214,7 +3220,7 @@ public abstract class SeekableStreamSupervisor<PartitionIdType, SequenceOffsetTy
             );
             futureGroupIds.add(groupId);
             futures.add(checkpointTaskGroup(group, true));
-            if (group.getHandoffEarly()) {
+            if (group.isHandoffEarly()) {
               numStoppedTasks.getAndIncrement();
             }
           } else if (earliestTaskStart.plus(ioConfig.getTaskDuration()).isBeforeNow()) {
